@@ -1,0 +1,19 @@
+{
+  "rules": {
+    "stats": {
+      ".read": true,
+      "eaten": {
+        ".write": true,
+        ".validate": "newData.isNumber() && ((!data.exists() && newData.val() >= 0 && newData.val() <= 200) || (data.exists() && newData.val() >= data.val() && newData.val() <= data.val() + 200))"
+      }
+    },
+    "presence": {
+      ".read": true,
+      "$id": {
+        ".write": true,
+        ".validate": "!newData.exists() || newData.val() === true"
+      }
+    },
+    "$other": { ".read": false, ".write": false }
+  }
+}
