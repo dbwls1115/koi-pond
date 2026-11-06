@@ -1702,7 +1702,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
   initShared();
 
   // ---- Firebase (website build): everyone's eaten count + who is here now ----
-  const FIREBASE_CONFIG = null;
+  const FIREBASE_CONFIG = {"apiKey": "AIzaSyB_SfdeOtzLgTUsj6J0pOjU4Dn4UIAj3TY", "authDomain": "night-koi-pond.firebaseapp.com", "databaseURL": "https://night-koi-pond-default-rtdb.asia-southeast1.firebasedatabase.app", "projectId": "night-koi-pond", "storageBucket": "night-koi-pond.firebasestorage.app", "messagingSenderId": "990325374234", "appId": "1:990325374234:web:7af9887e3c8957436100a3"};
   let fbTotalRef = null;
   function loadScript(src) {
     return new Promise((ok, fail) => { const el = document.createElement('script'); el.src = src; el.onload = ok; el.onerror = fail; document.head.appendChild(el); });
