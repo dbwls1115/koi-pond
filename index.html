@@ -1916,27 +1916,29 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     soundOn = !soundOn; syncSound();
     try { localStorage.setItem('koi-sound', soundOn ? 'on' : 'off'); } catch (e) {}
     if (soundOn) { if (!ac) startAudio(); else if (ac.state !== 'running' && ac.state !== 'suspended') rebuildAudio(); else { ac.resume().catch(() => {}); master.gain.setTargetAtTime(0.5, ac.currentTime, 0.4); scheduleDrip(); } }
-    else if (ac) { master.gain.setTargetAtTime(0, ac.currentTime, 0.15); clearTimeout(dripTimer); setTimeout(() => { if (!soundOn) ac.suspend().catch(() => {}); }, 600); }
+    else if (ac) { master.gain.setTargetAtTime(0, ac.currentTime, 0.15); clearTimeout(dripTimer); setTimeout(() => { if (!soundOn && ac) ac.suspend().catch(() => {}); }, 600); }
   });
-  let soundHintShown = false;
+  // Leaving the page: shut the sound down completely. Safari can report a resumed context as 'running'
+  // while it stays silent, so on return we never reuse it: the next tap builds a fresh one.
+  let soundWasOn = false, awayHintShown = false;
+  function shutAudio() {
+    if (!ac) return;
+    soundWasOn = true;
+    const old = ac; ac = null;
+    try { clearTimeout(dripTimer); } catch (e) {}
+    try { old.close().catch(() => {}); } catch (e) {}
+  }
   function backToPage() {
-    if (!ac || !soundOn) return;
-    ac.resume().then(() => { if (ac && ac.state === 'running') scheduleDrip(); }).catch(() => {});
-    // Safari often refuses to resume without a tap: say so once instead of staying silent
-    setTimeout(() => {
-      if (ac && soundOn && ac.state !== 'running' && !document.hidden && !soundHintShown) {
-        soundHintShown = true;
-        toast('화면을 한 번 누르면 물소리가 다시 나요');
-      }
-    }, 600);
+    if (document.hidden || !soundOn || ac || !soundWasOn || awayHintShown) return;
+    awayHintShown = true;
+    toast('화면을 한 번 누르면 물소리가 다시 나요');
   }
   document.addEventListener('visibilitychange', () => {
-    if (!ac) return;
-    if (document.hidden) { soundHintShown = false; ac.suspend().catch(() => {}); }
+    if (document.hidden) { awayHintShown = false; shutAudio(); }
     else backToPage();
   });
+  addEventListener('pagehide', shutAudio);
   addEventListener('pageshow', backToPage);
-  addEventListener('focus', backToPage);
   updateUI();
   let rzT = 0;
   addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => { resize(); initAmbient(); }, 120); });
