@@ -1751,7 +1751,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
   initFirebase();
 
   // ---- ambient water sound (starts with the first touch; browsers block sound before that) ----
-  let soundOn = true, ac = null, master = null, dripTimer = 0;
+  let soundOn = true, ac = null, master = null, dripTimer = 0, builtAt = 0;
   try { soundOn = localStorage.getItem('koi-sound') !== 'off'; } catch (e) {}
   const soundBtn = $('soundBtn');
   function syncSound() {
@@ -1782,6 +1782,8 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
       // iPhone: let web audio play even when the ring/silent switch is on silent
       try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
       ac = new AC();
+      builtAt = performance.now();
+      { const ctx = ac; ctx.onstatechange = () => { if (ctx.state === 'running') ctx._ran = true; }; if (ctx.state === 'running') ctx._ran = true; }
       // Safari unlocks audio only from inside the tap itself: resume and play one silent frame right now
       try {
         if (ac.state === 'suspended') ac.resume().catch(() => {});
@@ -1891,11 +1893,21 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     try { if (old && old.state !== 'closed') old.close().catch(() => {}); } catch (e) {}
     startAudio();
   }
+  function nudgeAudio() {
+    try {
+      ac.resume().catch(() => {});
+      const unlock = ac.createBufferSource(); unlock.buffer = ac.createBuffer(1, 1, 22050);
+      unlock.connect(ac.destination); unlock.start(0);
+    } catch (e) {}
+  }
   const firstTouch = (e) => {
     if (!soundOn) return;
     if (!ac) { startAudio(); return; }
     if (ac.state === 'running') return;
-    if (e && e.type === 'pointerdown') { ac.resume().catch(() => {}); return; }
+    // A sound that has never played yet (first tap) is still starting up: just help it along.
+    // Only a sound that did play and then got stuck (after a tab switch) is rebuilt, and only on a real tap.
+    const fresh = !ac._ran || performance.now() - builtAt < 2000;
+    if (fresh || (e && e.type === 'pointerdown')) { nudgeAudio(); return; }
     rebuildAudio();
   };
   // Safari counts only some events as a real user gesture (touchend / click / keydown), so listen to all of them
