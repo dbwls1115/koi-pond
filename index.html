@@ -194,6 +194,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
 .tier.t0 { color: var(--muted); }
 .tier.t1 { color: var(--moss); }
 .tier.t2 { color: var(--gold); }
+.tier.t3 { color: #8fe9ff; border-color: #8fe9ff; text-shadow: 0 0 8px rgba(120, 230, 255, 0.8); box-shadow: 0 0 10px rgba(120, 230, 255, 0.35); }
 .stat-line { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .stat-line strong { color: var(--cream); font-weight: 400; }
 .name-form { display: flex; gap: 8px; margin-top: 2px; }
@@ -499,8 +500,33 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     { name: '베니 키코쿠류', w: 2, tier: 2, make: g => { g.base = '#dfe3e6'; g.metal = true; g.doitsu = C.black; hiSparse(g, C.red); sumi(g, 4 + rnd(3), 1, 10, 0.3, 0.55); g.finBase = C.black; } },
     { name: '긴 쇼와', w: 2, tier: 2, make: g => { g.base = '#2a2620'; g.metal = true; hiSparse(g, '#dd5a26', 3); const n = 2 + rnd(3); for (let i = 0; i < n; i++) blob(g, '#f3e7c4', rand(1, 10), rand(-0.7, 0.7), rand(0.6, 1.1)); g.fin = '#f3e7c4'; g.finBase = '#2a2620'; } },
   ];
-  const TIERS = ['흔함', '드묾', '희귀'];
+  const TIERS = ['흔함', '드묾', '희귀', '전설'];
+  // very rare mutants that sometimes hatch instead of a koi
+  function makeMutant(kind) {
+    const g = { kind, breed: kind === 'eel' ? '전기뱀장어' : '메기', label: null, base: '#4f4a44', spots: [], net: null, doitsu: null, metal: false, fin: null, finBase: null, ginrin: false, longFin: false, seed: Math.random() * 100, tier: 3, mutant: true };
+    if (kind === 'catfish') {
+      const albino = Math.random() < 0.2;
+      g.label = albino ? '알비노 메기' : '돌연변이 메기';
+      g.base = albino ? '#eadbc6' : '#4d4740';
+      g.fin = albino ? '#e2cdb3' : '#5d564e';
+      g.eye = albino ? '#ff6b6b' : '#c8ff6a';
+      const mott = albino ? '#d8b896' : '#2c2824', light = albino ? '#f7ede0' : '#6f665b';
+      for (let i = 0; i < 16; i++) g.spots.push({ s: rand(0.6, 12), o: rand(-0.85, 0.85), r: rand(0.12, 0.3), c: Math.random() < 0.75 ? mott : light, e: rand(0.6, 1), rot: rand(-1, 1) });
+    } else {
+      const blue = Math.random() < 0.15;
+      g.label = blue ? '푸른 전기뱀장어' : '전기뱀장어';
+      g.base = blue ? '#1e3346' : '#2e3426';
+      g.fin = blue ? '#2a4a63' : '#3e4533';
+      g.eye = '#8ff3ff';
+      const dot = blue ? '#6fe0ff' : '#d4ad3f';
+      for (let i = 0; i < 22; i++) g.spots.push({ s: rand(2, 24), o: (i % 2 ? 1 : -1) * rand(0.45, 0.85), r: rand(0.1, 0.18), c: dot, e: 1, rot: 0 });
+    }
+    return g;
+  }
   function makeGenome() {
+    const roll = Math.random();
+    if (roll < 0.008) return makeMutant('catfish');   // 0.8%
+    if (roll < 0.012) return makeMutant('eel');       // 0.4%
     const b = pickW(BREEDS);
     const g = { breed: b.name, label: null, base: C.white, spots: [], net: null, doitsu: null, metal: false, fin: null, finBase: null, ginrin: false, longFin: false, seed: Math.random() * 100 };
     b.make(g);
@@ -517,6 +543,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     if (g.ginrin) t.push('반짝이 비늘');
     if (g.doitsu) t.push('도이츠');
     if (g.metal && !g.label.includes('오곤')) t.push('금속광');
+    if (g.mutant) t.push('돌연변이');
     return t;
   }
 
@@ -529,6 +556,10 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
   const maxW = (k, sc = scale) => 10.5 * k.size * sc;
   const PROFILE = [0.66, 0.88, 0.98, 1, 0.98, 0.93, 0.85, 0.75, 0.63, 0.5, 0.38, 0.27, 0.19, 0.13];
   const N = PROFILE.length;
+  const CATFISH = [0.98, 1.08, 1.08, 1.03, 0.97, 0.9, 0.82, 0.72, 0.62, 0.52, 0.43, 0.35, 0.29, 0.25];
+  const EEL = Array.from({ length: 26 }, (_, i) => 0.5 * (i < 2 ? 0.82 + i * 0.1 : Math.max(0.12, 1 - Math.pow((i - 2) / 24, 1.6) * 0.88)));
+  const profileOf = g => g && g.kind === 'eel' ? EEL : g && g.kind === 'catfish' ? CATFISH : PROFILE;
+  const segN = g => profileOf(g).length;
 
   function makeKoi(g, size, saved) {
     const a = rand(0, TAU);
@@ -545,7 +576,8 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
   function placeKoi(k, x, y, a) {
     k.a = a; k.wander = a; k.seg = [];
     const g = segGap(k);
-    for (let j = 0; j < N; j++) k.seg.push({ x: x - Math.cos(a) * j * g, y: y - Math.sin(a) * j * g });
+    const n = segN(k.g);
+    for (let j = 0; j < n; j++) k.seg.push({ x: x - Math.cos(a) * j * g, y: y - Math.sin(a) * j * g });
   }
   function inRock(x, y, pad = 0) {
     for (const r of padObs) {
@@ -1098,15 +1130,17 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
       if (d < 24 * scale && d > 0.01) desired += angDiff(desired, Math.atan2(dy, dx)) * 0.25;
     }
     k.a += clamp(angDiff(k.a, desired), -turn * dt, turn * dt);
+    if (k.g.kind === 'catfish') speedGoal *= 0.75; else if (k.g.kind === 'eel') speedGoal *= 1.1;
     k.speed += (speedGoal - k.speed) * Math.min(1, dt * 1.6);
     k.phase += dt * (2.6 + k.speed * 0.07 / scale);
-    const sway = Math.sin(k.phase) * 0.2;
+    const kind = k.g.kind;
+    const sway = Math.sin(k.phase) * (kind === 'eel' ? 0.38 : 0.2);
     const fl = flowAt(h.x, h.y, t);
     h.x += Math.cos(k.a + sway) * k.speed * dt + fl.x * dt * 0.12;
     h.y += Math.sin(k.a + sway) * k.speed * dt + fl.y * dt * 0.12;
     h.x = clamp(h.x, 4, W - 4); h.y = clamp(h.y, 4, H - 4);
     const g = segGap(k);
-    for (let j = 1; j < N; j++) {
+    for (let j = 1; j < k.seg.length; j++) {
       const p = k.seg[j], q = k.seg[j - 1];
       const dx = p.x - q.x, dy = p.y - q.y, d = Math.hypot(dx, dy) || 1;
       p.x = q.x + dx / d * g; p.y = q.y + dy / d * g;
@@ -1117,6 +1151,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
       k.eaten++; eatenTotal++; minePending++;
       k.size = Math.min(MAX_SIZE, k.size + 0.004 * (MAX_SIZE - k.size) / (MAX_SIZE - 0.55));
       k.gulp = 1;
+      if (k.g.kind === 'eel') k.zap = 0.5;
       ripples.push({ x: target.x, y: target.y, t: 0, life: 0.8, r: 16 * scale, str: 0.3 });
       const now = Math.floor(cm(k) / 5) * 5;
       if (now > k.mile) {
@@ -1132,6 +1167,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
       ripples.push({ x: h.x, y: h.y, t: 0, life: 2.4, r: (40 + 22 * k.size) * scale, str: 0, wake: true, a0: rand(0, TAU) });
     }
     k.gulp = Math.max(0, k.gulp - dt * 3);
+    if (k.zap) k.zap = Math.max(0, k.zap - dt);
     k.full = Math.max(0, k.full - dt * 0.035);
     if (k.sel > 0) k.sel -= dt;
   }
@@ -1139,12 +1175,13 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
   // ================= koi drawing =================
   function drawKoi(c, k, sc, shadow, time) {
     const g = k.g, s = k.seg, mw = maxW(k, sc);
+    const P = profileOf(g), N = Math.min(P.length, s.length), kind = g.kind || 'koi';
     const L = [], R = [], nrm = [], wid = [];
     for (let i = 0; i < N; i++) {
       let dx = i === 0 ? s[0].x - s[1].x : s[i - 1].x - s[i].x;
       let dy = i === 0 ? s[0].y - s[1].y : s[i - 1].y - s[i].y;
       const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
-      const w = mw * PROFILE[i] * (i < 3 ? 1 + k.gulp * 0.07 : 1);
+      const w = mw * P[i] * (i < 3 ? 1 + k.gulp * 0.07 : 1);
       nrm.push({ x: -dy, y: dx, dx, dy }); wid.push(w);
       L.push({ x: s[i].x - dy * w, y: s[i].y + dx * w });
       R.push({ x: s[i].x + dy * w, y: s[i].y - dx * w });
@@ -1165,6 +1202,43 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     const flick = Math.sin(k.phase + 1.2) * 0.35;
 
     const finsAndTail = (fill, alpha, baseCol) => {
+      if (kind === 'catfish') {
+        c.save(); c.globalAlpha = alpha; c.fillStyle = fill;
+        // rounded paddle tail
+        const tp = { x: tail.x + back.x * mw * 0.75, y: tail.y + back.y * mw * 0.75 };
+        c.beginPath(); c.ellipse(tp.x + tn.x * flick * mw * 0.4, tp.y + tn.y * flick * mw * 0.4, mw * 0.95, mw * 0.62, Math.atan2(back.y, back.x), 0, TAU); c.fill();
+        // broad, low pectoral fins and a long fringe along the back half
+        const fp = s[2], fn = nrm[2], dirA = Math.atan2(fn.dy, fn.dx), flap = Math.sin(k.phase * 0.5) * 0.25;
+        for (const side of [1, -1]) {
+          c.beginPath(); c.ellipse(fp.x + fn.x * wid[2] * 0.95 * side - fn.dx * mw * 0.4, fp.y + fn.y * wid[2] * 0.95 * side - fn.dy * mw * 0.4, mw * 0.95, mw * 0.4, dirA + side * (2.0 + flap), 0, TAU); c.fill();
+        }
+        c.globalAlpha = alpha * 0.55; c.strokeStyle = fill; c.lineCap = 'round';
+        for (const side of [1, -1]) {
+          c.lineWidth = mw * 0.35; c.beginPath();
+          for (let i = 6; i < N; i++) { const px = s[i].x + nrm[i].x * wid[i] * 1.05 * side, py = s[i].y + nrm[i].y * wid[i] * 1.05 * side; i === 6 ? c.moveTo(px, py) : c.lineTo(px, py); }
+          c.stroke();
+        }
+        c.restore();
+        return;
+      }
+      if (kind === 'eel') {
+        c.save(); c.globalAlpha = alpha * 0.6; c.strokeStyle = fill; c.lineCap = 'round'; c.lineJoin = 'round';
+        // the long rippling fin that runs under an eel's body, peeking out both sides
+        for (const side of [1, -1]) {
+          c.lineWidth = mw * 0.22; c.beginPath();
+          for (let i = 5; i < N; i++) {
+            const wv = 1.15 + 0.25 * Math.sin(k.phase * 2.2 - i * 0.7);
+            const px = s[i].x + nrm[i].x * wid[i] * wv * side, py = s[i].y + nrm[i].y * wid[i] * wv * side;
+            i === 5 ? c.moveTo(px, py) : c.lineTo(px, py);
+          }
+          c.stroke();
+        }
+        c.globalAlpha = alpha; c.fillStyle = fill;
+        const fp = s[2], fn = nrm[2], dirA = Math.atan2(fn.dy, fn.dx);
+        for (const side of [1, -1]) { c.beginPath(); c.ellipse(fp.x + fn.x * wid[2] * 1.1 * side, fp.y + fn.y * wid[2] * 1.1 * side, mw * 0.4, mw * 0.18, dirA + side * 2.2, 0, TAU); c.fill(); }
+        c.restore();
+        return;
+      }
       c.save();
       c.globalAlpha = alpha; c.fillStyle = fill;
       const spread = 0.75 * (g.longFin ? 1.15 : 1);
@@ -1205,11 +1279,22 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
       c.restore();
     }
     finsAndTail(g.fin, g.longFin ? 0.6 : 0.72, g.finBase);
-    c.save();
-    c.globalAlpha = 0.3; c.strokeStyle = g.fin; c.lineWidth = mw * 0.35; c.lineCap = 'round';
-    c.beginPath(); c.moveTo(s[3].x, s[3].y);
-    for (let i = 4; i <= 9; i++) c.lineTo(s[i].x, s[i].y);
-    c.stroke(); c.restore();
+    if (kind === 'koi') {
+      c.save();
+      c.globalAlpha = 0.3; c.strokeStyle = g.fin; c.lineWidth = mw * 0.35; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(s[3].x, s[3].y);
+      for (let i = 4; i <= 9; i++) c.lineTo(s[i].x, s[i].y);
+      c.stroke(); c.restore();
+    }
+    // mutants carry a faint, pulsing glow
+    if (g.mutant) {
+      const pulse = time ? 0.6 + 0.4 * Math.sin(time * (kind === 'eel' ? 5 : 2) + g.seed) : 0.8;
+      c.save();
+      c.shadowColor = kind === 'eel' ? `rgba(110, 225, 255, ${0.75 * pulse})` : `rgba(170, 255, 110, ${0.45 * pulse})`;
+      c.shadowBlur = mw * (kind === 'eel' ? 2.2 : 1.6);
+      c.fillStyle = g.base; bodyPath(); c.fill();
+      c.restore();
+    }
 
     c.save();
     c.fillStyle = g.base; bodyPath(); c.fill();
@@ -1267,12 +1352,54 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     }
     c.restore();
 
-    c.fillStyle = 'rgba(10,10,12,0.85)';
     const n0 = nrm[0];
+    if (kind === 'catfish') {
+      // four whiskers: two long ones sweeping back, two short ones
+      c.save(); c.strokeStyle = g.fin; c.globalAlpha = 0.9; c.lineCap = 'round';
+      const sway = Math.sin(k.phase * 0.8) * 0.25;
+      for (const [side, len, fw, lw] of [[1, 2.6, 0.85, 0.16], [-1, 2.6, 0.85, 0.16], [1, 1.2, 0.5, 0.11], [-1, 1.2, 0.5, 0.11]]) {
+        const bx = s[0].x + n0.dx * wid[0] * fw + n0.x * wid[0] * 0.55 * side, by = s[0].y + n0.dy * wid[0] * fw + n0.y * wid[0] * 0.55 * side;
+        const out = { x: n0.x * side, y: n0.y * side };
+        const ex = bx + (out.x * 0.9 - n0.dx * 0.6) * mw * len, ey = by + (out.y * 0.9 - n0.dy * 0.6) * mw * len;
+        c.lineWidth = Math.max(0.8, mw * lw);
+        c.beginPath(); c.moveTo(bx, by);
+        c.quadraticCurveTo(bx + (out.x + n0.dx * (0.6 + sway * side)) * mw * len * 0.6, by + (out.y + n0.dy * (0.6 + sway * side)) * mw * len * 0.6, ex, ey);
+        c.stroke();
+      }
+      c.restore();
+    }
+    const eyeR = Math.max(1, mw * (kind === 'catfish' ? 0.1 : kind === 'eel' ? 0.09 : 0.13));
+    const eyeF = kind === 'catfish' ? 0.5 : 0.35, eyeS = kind === 'catfish' ? 0.78 : 0.62;
     for (const side of [1, -1]) {
-      c.beginPath();
-      c.arc(s[0].x + n0.dx * wid[0] * 0.35 + n0.x * wid[0] * 0.62 * side, s[0].y + n0.dy * wid[0] * 0.35 + n0.y * wid[0] * 0.62 * side, Math.max(1, mw * 0.13), 0, TAU);
-      c.fill();
+      const ex = s[0].x + n0.dx * wid[0] * eyeF + n0.x * wid[0] * eyeS * side, ey = s[0].y + n0.dy * wid[0] * eyeF + n0.y * wid[0] * eyeS * side;
+      if (g.eye) {
+        c.save(); c.shadowColor = g.eye; c.shadowBlur = mw * 0.8; c.fillStyle = g.eye;
+        c.beginPath(); c.arc(ex, ey, eyeR * 1.1, 0, TAU); c.fill(); c.restore();
+      } else {
+        c.fillStyle = 'rgba(10,10,12,0.85)';
+        c.beginPath(); c.arc(ex, ey, eyeR, 0, TAU); c.fill();
+      }
+    }
+    // electric eel: little lightning crackles around the body, stronger right after it eats
+    if (kind === 'eel' && time) {
+      const zap = k.zap || 0;
+      const beat = Math.sin(time * 9 + g.seed) > 0.55 || zap > 0;
+      if (beat) {
+        c.save(); c.globalCompositeOperation = 'lighter'; c.lineCap = 'round'; c.lineJoin = 'round';
+        const bolts = 2 + (zap > 0 ? 4 : 0);
+        for (let b = 0; b < bolts; b++) {
+          const i = 2 + ((Math.floor(time * 13) * 7 + b * 5 + Math.floor(g.seed)) % (N - 4));
+          const side = (b + Math.floor(time * 11)) % 2 ? 1 : -1, n = nrm[i];
+          let px = s[i].x + n.x * wid[i] * side, py = s[i].y + n.y * wid[i] * side;
+          c.strokeStyle = `rgba(150, 240, 255, ${0.55 + 0.45 * Math.random()})`; c.lineWidth = Math.max(0.8, mw * 0.08);
+          c.shadowColor = 'rgba(120, 230, 255, 0.9)'; c.shadowBlur = mw * 0.7;
+          c.beginPath(); c.moveTo(px, py);
+          const reach = mw * (zap > 0 ? 2.4 : 1.4);
+          for (let j = 0; j < 4; j++) { px += n.x * side * reach / 4 + (Math.random() - 0.5) * mw * 0.6; py += n.y * side * reach / 4 + (Math.random() - 0.5) * mw * 0.6; c.lineTo(px, py); }
+          c.stroke();
+        }
+        c.restore();
+      }
     }
   }
 
@@ -1283,13 +1410,15 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     p.setTransform(pr, 0, 0, pr, 0, 0);
     p.clearRect(0, 0, cssW, cssH);
     const fm = g.longFin ? 1.65 : 1;
-    // whole fish in units of sc: nose ~7, body 67.6, tail ~16*fm; height set by tail/pectoral fins
-    const longU = 7 + 67.6 + 16 * fm, tallU = 40 * (g.longFin ? 1.3 : 1);
+    // whole fish in units of sc: nose ~7, body, tail; height set by tail/pectoral fins (or whiskers)
+    const n = segN(g);
+    const longU = g.kind === 'eel' ? 7 + (n - 1) * 5.2 + 2 : g.kind === 'catfish' ? 7 + 67.6 + 20 : 7 + 67.6 + 16 * fm;
+    const tallU = g.kind === 'eel' ? 16 : g.kind === 'catfish' ? 44 : 40 * (g.longFin ? 1.3 : 1);
     const sc = Math.min(cssW * 0.9 / longU, cssH * 0.9 / tallU);
     const fake = { g, size: 1, gulp: 0, phase: -1.2, seg: [] };
     const gap = segGap(fake, sc);
     const x0 = (cssW + longU * sc) / 2 - 7 * sc;
-    for (let j = 0; j < N; j++) fake.seg.push({ x: x0 - j * gap, y: cssH / 2 });
+    for (let j = 0; j < n; j++) fake.seg.push({ x: x0 - j * gap, y: cssH / 2 + (g.kind === 'eel' ? Math.sin(j * 0.5) * 2.2 * sc : 0) });
     drawKoi(p, fake, sc, false, 0);
   }
 
@@ -1591,7 +1720,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     koi.push(k); addRow(k);
     ripples.push({ x, y, t: 0, life: 1.8, r: 60 * scale, str: 1.2 });
     plop();
-    toast(`${esc(g.label)} 잉어가 들어왔어요 · ${TIERS[g.tier]}`);
+    toast(g.mutant ? `돌연변이 <b>${esc(g.label)}</b>${josa(g.label, '이', '가')} 나타났어요! · 전설` : `${esc(g.label)} 잉어가 들어왔어요 · ${TIERS[g.tier]}`);
     saveDirty = true; updateUI();
   }
 
@@ -1652,9 +1781,10 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     let best = null, bd = Infinity;
     for (const k of koi) {
       const mw = maxW(k);
-      for (let i = 0; i < N - 2; i++) {
+      const P = profileOf(k.g);
+      for (let i = 0; i < Math.min(P.length, k.seg.length) - 2; i++) {
         const d = Math.hypot(k.seg[i].x - x, k.seg[i].y - y);
-        const lim = mw * PROFILE[i] + 14;
+        const lim = mw * P[i] + 14;
         if (d < lim && d / lim < bd) { bd = d / lim; best = k; }
       }
     }
