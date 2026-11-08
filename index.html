@@ -1882,29 +1882,28 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     blip(rand(160, 220), rand(520, 700), 0.22, 0.09);
     grain(ac.currentTime + 0.012, rand(1200, 1800), 1.2, 0.18, 0.07);
   };
-  // Safari leaves the context 'suspended' or 'interrupted' after a tab switch and only lets a tap bring it back
-  function wakeAudio() {
-    if (!ac || ac.state === 'running') return;
-    if (ac.state === 'closed') { ac = null; startAudio(); return; }
-    try {
-      ac.resume().catch(() => {});
-      const unlock = ac.createBufferSource(); unlock.buffer = ac.createBuffer(1, 1, 22050);
-      unlock.connect(ac.destination); unlock.start(0);
-      master.gain.cancelScheduledValues(ac.currentTime);
-      master.gain.setTargetAtTime(0.5, ac.currentTime, 0.4);
-      scheduleDrip();
-    } catch (e) {}
+  // Safari leaves the context 'suspended' or 'interrupted' after a tab switch, and on iPhone it often
+  // stays stuck even after resume(). On a real tap (touchend / click / key) we simply rebuild the sound
+  // from scratch, which Safari always allows inside a tap.
+  function rebuildAudio() {
+    const old = ac; ac = null;
+    try { clearTimeout(dripTimer); } catch (e) {}
+    try { if (old && old.state !== 'closed') old.close().catch(() => {}); } catch (e) {}
+    startAudio();
   }
-  const firstTouch = () => {
+  const firstTouch = (e) => {
     if (!soundOn) return;
-    if (!ac) startAudio(); else wakeAudio();
+    if (!ac) { startAudio(); return; }
+    if (ac.state === 'running') return;
+    if (e && e.type === 'pointerdown') { ac.resume().catch(() => {}); return; }
+    rebuildAudio();
   };
   // Safari counts only some events as a real user gesture (touchend / click / keydown), so listen to all of them
   for (const ev of ['pointerdown', 'touchend', 'click', 'keydown']) document.addEventListener(ev, firstTouch, true);
   soundBtn.addEventListener('click', () => {
     soundOn = !soundOn; syncSound();
     try { localStorage.setItem('koi-sound', soundOn ? 'on' : 'off'); } catch (e) {}
-    if (soundOn) { if (!ac) startAudio(); else { ac.resume().catch(() => {}); master.gain.setTargetAtTime(0.5, ac.currentTime, 0.4); scheduleDrip(); } }
+    if (soundOn) { if (!ac) startAudio(); else if (ac.state !== 'running' && ac.state !== 'suspended') rebuildAudio(); else { ac.resume().catch(() => {}); master.gain.setTargetAtTime(0.5, ac.currentTime, 0.4); scheduleDrip(); } }
     else if (ac) { master.gain.setTargetAtTime(0, ac.currentTime, 0.15); clearTimeout(dripTimer); setTimeout(() => { if (!soundOn) ac.suspend().catch(() => {}); }, 600); }
   });
   let soundHintShown = false;
