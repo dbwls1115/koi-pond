@@ -416,7 +416,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
   }
 
   let W = innerWidth, H = innerHeight, scale = 1, U = 60;
-  const MAX_KOI = 12, MAX_SIZE = 1.5, MAX_PELLETS = 600;
+  const MAX_KOI = 30, MAX_SIZE = 1.5, MAX_PELLETS = 600;
   const STORE = 'koi-pond-v3';
 
   // ================= koi genetics =================
@@ -1583,7 +1583,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
   });
 
   function adoptKoi() {
-    if (koi.length >= MAX_KOI) { toast('연못이 꽉 찼어요. 12마리까지 함께 살 수 있어요'); return; }
+    if (koi.length >= MAX_KOI) { toast(`연못이 꽉 찼어요. ${MAX_KOI}마리까지 함께 살 수 있어요`); return; }
     const g = makeGenome();
     const k = makeKoi(g, rand(0.55, 1.1));
     const x = k.seg[0].x, y = k.seg[0].y;
