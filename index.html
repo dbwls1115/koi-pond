@@ -304,6 +304,21 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
 .empty { padding: 26px 12px; text-align: center; color: var(--muted); font-size: 13.5px; }
 .drawer-foot { padding: 12px 18px 16px; border-top: 1px solid var(--line); display: grid; gap: 6px; }
 .adopt-note { font-size: 12px; color: var(--muted); margin: 0; }
+.move-btn { justify-self: start; font-size: 13px; color: var(--cream); padding: 7px 12px; border-radius: 10px; background: rgba(241, 234, 217, 0.1); }
+.move-btn:hover { background: rgba(241, 234, 217, 0.16); }
+.move { position: fixed; z-index: 12; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(400px, calc(100vw - 24px)); max-height: calc(100vh - 32px); overflow-y: auto;
+  padding: 16px 18px 18px; border-radius: 22px; background: var(--glass-strong); display: grid; gap: 10px; }
+.move[hidden] { display: none !important; }
+.move h3 { margin: 0; font-family: var(--display); font-size: 19px; }
+.move h4 { margin: 4px 0 0; font-size: 13.5px; font-weight: 700; }
+.move p { margin: 0; font-size: 12.5px; color: var(--muted); }
+.move textarea { width: 100%; height: 74px; resize: none; font: 12px/1.4 ui-monospace, Menlo, monospace; color: var(--cream); background: rgba(241, 234, 217, 0.07);
+  border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; word-break: break-all; }
+.move textarea:focus { outline: 2px solid var(--gold); border-color: transparent; }
+.move .row2 { display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
+.move .row2 .note { margin-right: auto; font-size: 12px; color: var(--moss); }
+.move .row2 .note.bad { color: #f0a07e; }
+.move .head { display: flex; justify-content: space-between; align-items: center; }
 .reset { justify-self: start; font-size: 12px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; padding: 2px 0; }
 .reset.arm { color: #f0a07e; }
 .family:disabled { opacity: .45; cursor: default; }
@@ -391,6 +406,17 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
   <div class="veil"></div><div class="rays"></div>
   <div class="box"><div class="kicker">✦ 돌연변이 등장 ✦</div><canvas id="revealPic"></canvas><div class="nm" id="revealName"></div><div class="odds" id="revealOdds"></div></div>
 </div>
+<div class="move glass" id="moveBox" hidden role="dialog" aria-labelledby="moveTitle">
+  <div class="head"><h3 id="moveTitle">연못 옮기기</h3>
+    <button class="close" id="moveClose" aria-label="닫기"><svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button></div>
+  <p>잉어는 이 브라우저에만 저장돼요. 코드를 복사해서 다른 기기의 연못에 붙여 넣으면 잉어들이 그대로 옮겨 가요.</p>
+  <h4>이 연못의 코드</h4>
+  <textarea id="moveOut" readonly aria-label="이 연못의 코드"></textarea>
+  <div class="row2"><span class="note" id="moveOutNote"></span><button type="button" class="primary-btn" id="moveCopy">코드 복사</button></div>
+  <h4>받은 코드로 불러오기</h4>
+  <textarea id="moveIn" placeholder="다른 기기에서 복사한 코드를 붙여 넣으세요" aria-label="받은 연못 코드"></textarea>
+  <div class="row2"><span class="note" id="moveInNote"></span><button type="button" class="primary-btn" id="moveLoad">불러오기</button></div>
+</div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <button class="family add menu-item glass" id="newBtn" aria-label="새 잉어 들이기">
@@ -425,6 +451,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
   <p class="empty" id="emptyRow" hidden>연못이 비었어요. 왼쪽 위 + 버튼으로 잉어를 들여 보세요.</p>
   <div class="drawer-foot">
     <p class="adopt-note">칸을 누르면 연못에서 그 잉어를 찾아 줘요. + 버튼으로 새 잉어를 들일 수 있어요.</p>
+    <button type="button" class="move-btn" id="moveBtn">연못 옮기기 (코드로 다른 기기에서 열기)</button>
     <button type="button" class="reset" id="resetBtn">연못 처음부터 다시 시작</button>
   </div>
 </aside>
@@ -1778,6 +1805,97 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     koi.forEach(addRow);
     uiDirty = true; saveDirty = true;
     toast('새 잉어 세 마리가 들어왔어요');
+  });
+
+  // ================= pond code: carry the koi to another device =================
+  const b64u = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+  const unb64u = str => { const s = atob(str.replace(/-/g, '+').replace(/_/g, '/')); const a = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; };
+  const canZip = typeof CompressionStream === 'function' && typeof DecompressionStream === 'function';
+  async function pipeBytes(bytes, stream) { return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer()); }
+  const round3 = v => typeof v === 'number' ? Math.round(v * 1000) / 1000 : v;
+  function slimGenome(g) {
+    const o = {};
+    for (const [k, v] of Object.entries(g)) {
+      if (v === null || v === false) continue;
+      o[k] = k === 'spots' ? v.map(sp => ({ s: round3(sp.s), o: round3(sp.o), r: round3(sp.r), c: sp.c, e: round3(sp.e), rot: round3(sp.rot) })) : round3(v);
+    }
+    return o;
+  }
+  async function makePondCode() {
+    const data = { v: 1, given, eaten: eatenTotal, koi: koi.map(k => ({ n: k.name, z: round3(k.size), e: k.eaten, g: slimGenome(k.g) })) };
+    const raw = new TextEncoder().encode(JSON.stringify(data));
+    return canZip ? 'KOI1.' + b64u(await pipeBytes(raw, new CompressionStream('deflate-raw'))) : 'KOI0.' + b64u(raw);
+  }
+  // the code comes from outside, so every field is checked and rebuilt rather than trusted
+  const COLOR_RE = /^(#[0-9a-fA-F]{6}|rgb\(\d{1,3}, \d{1,3}, \d{1,3}\))$/;
+  const num = (v, a, b, d) => (typeof v === 'number' && isFinite(v)) ? clamp(v, a, b) : d;
+  const col = (v, d) => typeof v === 'string' && COLOR_RE.test(v) ? v : d;
+  const txt = (v, n) => typeof v === 'string' ? v.replace(/[<>&"'\u0000-\u001f]/g, '').slice(0, n) : '';
+  function cleanGenome(g) {
+    if (!g || typeof g !== 'object' || !Array.isArray(g.spots)) return null;
+    const kind = g.kind === 'catfish' || g.kind === 'eel' ? g.kind : undefined;
+    const out = {
+      breed: txt(g.breed, 20) || '잉어', label: txt(g.label, 24) || txt(g.breed, 20) || '잉어',
+      base: col(g.base, '#f5f0e6'), net: g.net ? col(g.net, null) : null, doitsu: g.doitsu ? col(g.doitsu, null) : null,
+      metal: !!g.metal, fin: col(g.fin, col(g.base, '#f5f0e6')), finBase: g.finBase ? col(g.finBase, null) : null,
+      ginrin: !!g.ginrin, longFin: !!g.longFin, seed: num(g.seed, 0, 100, 1), tier: Math.round(num(g.tier, 0, 3, 0)),
+      spots: g.spots.slice(0, 160).filter(sp => sp && typeof sp === 'object').map(sp => ({
+        s: num(sp.s, -2, 30, 1), o: num(sp.o, -2, 2, 0), r: num(sp.r, 0.02, 3, 0.5), c: col(sp.c, '#d63f24'), e: num(sp.e, 0.2, 1.5, 0.8), rot: num(sp.rot, -4, 4, 0),
+      })),
+    };
+    if (kind) { out.kind = kind; out.mutant = true; out.eye = col(g.eye, '#c8ff6a'); out.tier = 3; }
+    return out;
+  }
+  async function readPondCode(code) {
+    code = String(code || '').trim().replace(/\s+/g, '');
+    const m = /^KOI([01])\.([A-Za-z0-9_-]+)$/.exec(code);
+    if (!m) throw new Error('form');
+    let bytes = unb64u(m[2]);
+    if (m[1] === '1') { if (!canZip) throw new Error('zip'); bytes = await pipeBytes(bytes, new DecompressionStream('deflate-raw')); }
+    if (bytes.length > 2e6) throw new Error('size');
+    const d = JSON.parse(new TextDecoder().decode(bytes));
+    if (!d || d.v !== 1 || !Array.isArray(d.koi)) throw new Error('form');
+    const list = d.koi.slice(0, MAX_KOI).map(k => {
+      const g = cleanGenome(k && k.g);
+      return g && { name: txt(k.n, 10), size: num(k.z, 0.5, MAX_SIZE, 1), eaten: Math.round(num(k.e, 0, 1e9, 0)), g };
+    }).filter(Boolean);
+    if (!list.length) throw new Error('empty');
+    return { given: Math.round(num(d.given, 0, 1e12, 0)), eaten: Math.round(num(d.eaten, 0, 1e12, 0)), list };
+  }
+  const moveBox = $('moveBox');
+  let loadArmed = 0;
+  function closeMove() { moveBox.hidden = true; clearTimeout(loadArmed); loadArmed = 0; $('moveLoad').textContent = '불러오기'; }
+  $('moveBtn').addEventListener('click', async () => {
+    $('moveOut').value = '만드는 중…'; $('moveOutNote').textContent = ''; $('moveIn').value = ''; $('moveInNote').textContent = '';
+    moveBox.hidden = false;
+    try { $('moveOut').value = await makePondCode(); } catch (e) { $('moveOut').value = ''; $('moveOutNote').textContent = '코드를 만들지 못했어요'; $('moveOutNote').classList.add('bad'); }
+  });
+  $('moveClose').addEventListener('click', closeMove);
+  $('moveCopy').addEventListener('click', async () => {
+    const t = $('moveOut'), note = $('moveOutNote');
+    note.classList.remove('bad');
+    try { await navigator.clipboard.writeText(t.value); note.textContent = '복사했어요'; }
+    catch (e) { t.focus(); t.select(); try { document.execCommand('copy'); note.textContent = '복사했어요'; } catch (e2) { note.textContent = '길게 눌러 직접 복사해 주세요'; } }
+  });
+  $('moveLoad').addEventListener('click', async () => {
+    const note = $('moveInNote'), btn = $('moveLoad');
+    note.classList.remove('bad'); note.textContent = '';
+    let d;
+    try { d = await readPondCode($('moveIn').value); }
+    catch (e) { note.classList.add('bad'); note.textContent = e.message === 'zip' ? '이 브라우저에서는 이 코드를 열 수 없어요' : '코드가 올바르지 않아요. 처음부터 끝까지 다 붙여 넣었는지 확인해 주세요'; return; }
+    if (!loadArmed) {
+      loadArmed = setTimeout(() => { loadArmed = 0; btn.textContent = '불러오기'; }, 4000);
+      btn.textContent = `지금 잉어 ${koi.length}마리 대신 ${d.list.length}마리로 바꿀까요?`;
+      return;
+    }
+    clearTimeout(loadArmed); loadArmed = 0; btn.textContent = '불러오기';
+    closeCard();
+    koi = d.list.map(s => makeKoi(s.g, s.size, { name: s.name, eaten: s.eaten }));
+    given = d.given; eatenTotal = d.eaten; pellets = [];
+    list.innerHTML = ''; rows.clear(); koi.forEach(addRow);
+    uiDirty = true; saveDirty = true; save();
+    closeMove();
+    toast(`잉어 ${koi.length}마리가 이 연못으로 옮겨 왔어요`);
   });
 
   const menuItems = [...document.querySelectorAll('.menu-item')];
