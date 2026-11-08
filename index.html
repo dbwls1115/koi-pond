@@ -621,7 +621,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
   function seed() {
     koi = []; given = 0; eatenTotal = 0;
     for (let i = 0; i < 3; i++) koi.push(makeKoi(makeGenome(), rand(0.55, 1.1)));
-    for (const k of koi) if (k.g.mutant) setTimeout(() => announceRare(k.g), 0);
+    for (const k of koi) if (k.g.mutant) setTimeout(() => { announceRare(k.g); k.shine = 3.2; }, 600);
   }
 
   // ================= reflection texture (painted once per size) =================
@@ -1572,7 +1572,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
   }
   // a mutant that just hatched shimmers in the water for a few seconds
-  const SHINE_ON = false; // waiting for the owner's OK on the design
+  const SHINE_ON = true;
   const SHINE_LEN = 3.2;
   function star(x, y, r, a) {
     ctx.beginPath();
