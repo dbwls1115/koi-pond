@@ -1779,7 +1779,15 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     try {
+      // iPhone: let web audio play even when the ring/silent switch is on silent
+      try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
       ac = new AC();
+      // Safari unlocks audio only from inside the tap itself: resume and play one silent frame right now
+      try {
+        if (ac.state === 'suspended') ac.resume().catch(() => {});
+        const unlock = ac.createBufferSource(); unlock.buffer = ac.createBuffer(1, 1, 22050);
+        unlock.connect(ac.destination); unlock.start(0);
+      } catch (e) {}
       master = ac.createGain(); master.gain.value = 0; master.connect(ac.destination);
       // running water = a soft low wash plus a dense spray of tiny filtered noise grains
       whiteBuf = noiseBuffer(3, false);
@@ -1878,8 +1886,8 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     if (!soundOn) return;
     if (!ac) startAudio(); else if (ac.state === 'suspended') ac.resume().catch(() => {});
   };
-  document.addEventListener('pointerdown', firstTouch, true);
-  document.addEventListener('keydown', firstTouch, true);
+  // Safari counts only some events as a real user gesture (touchend / click / keydown), so listen to all of them
+  for (const ev of ['pointerdown', 'touchend', 'click', 'keydown']) document.addEventListener(ev, firstTouch, true);
   soundBtn.addEventListener('click', () => {
     soundOn = !soundOn; syncSound();
     try { localStorage.setItem('koi-sound', soundOn ? 'on' : 'off'); } catch (e) {}
