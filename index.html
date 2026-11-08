@@ -50,6 +50,7 @@ body { font-family: var(--body); font-size: 15px; line-height: 1.5; -webkit-font
 #water, #scene { position: fixed; z-index: 0; inset: 0; width: 100vw; height: 100vh; display: block; }
 #water { background: radial-gradient(ellipse at 50% 50%, #1f6b52, #0c3a2d 75%); }
 #paper { position: fixed; inset: 0; z-index: 2; pointer-events: none; mix-blend-mode: multiply; opacity: 0.35; background-repeat: repeat, no-repeat; background-size: 220px 220px, 100% 100%; }
+#water, #scene, #paper { transform-origin: 0 0; }
 #scene { z-index: 1; touch-action: none; cursor: crosshair; -webkit-tap-highlight-color: transparent; }
 #scene.over-koi { cursor: pointer; }
 
@@ -1578,42 +1579,51 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     for (let i = 0; i < 8; i++) { const an = a + i * Math.PI / 4, rr = i % 2 ? r * 0.22 : r; ctx.lineTo(x + Math.cos(an) * rr, y + Math.sin(an) * rr); }
     ctx.closePath(); ctx.fill();
   }
-  function drawShine(k, t) {
-    const age = SHINE_LEN - k.shine;
-    const env = Math.min(1, age / 0.35) * Math.min(1, k.shine / 0.8);
+  function shineEnv(k) { const age = SHINE_LEN - k.shine; return { age, env: Math.max(0, Math.min(1, age / 0.5) * Math.min(1, k.shine / 1)) }; }
+  function shineRGB(k) {
+    const special = /푸른|알비노/.test(k.g.label);
+    return k.g.kind === 'eel' ? (special ? '120, 225, 255' : '200, 255, 150') : (special ? '255, 240, 205' : '165, 240, 255');
+  }
+  // a soft halo that sits UNDER the fish, so its own shape and pattern stay clear
+  function drawShineHalo(k, t) {
+    const { env } = shineEnv(k);
     if (env <= 0) return;
-    const blue = /푸른|알비노/.test(k.g.label);
-    const rgb = k.g.kind === 'eel' ? (blue ? '120, 225, 255' : '190, 255, 140') : (blue ? '255, 236, 200' : '160, 240, 255');
+    const rgb = shineRGB(k), pulse = 0.8 + 0.2 * Math.sin(t * 5);
     ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    const pulse = 0.75 + 0.25 * Math.sin(t * 9);
-    // soft halo along the body
-    const step = k.g.kind === 'eel' ? 2 : 1;
+    const step = k.g.kind === 'eel' ? 3 : 2;
     for (let i = 0; i < k.seg.length; i += step) {
-      const p = k.seg[i], r = (maxW(k) * 3.2 + 14 * scale) * (1 - i / k.seg.length * 0.5);
-      const gr = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+      const p = k.seg[i], r = (maxW(k) * 2.1 + 9 * scale) * (1 - i / k.seg.length * 0.45);
+      const gr = ctx.createRadialGradient(p.x, p.y, maxW(k) * 0.5, p.x, p.y, r);
       gr.addColorStop(0, `rgba(${rgb}, ${0.3 * env * pulse})`); gr.addColorStop(1, `rgba(${rgb}, 0)`);
       ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.fill();
     }
-    // twinkling stars that pop up around it
-    const n = 22;
+    ctx.restore();
+  }
+  // a few small stars that twinkle just outside the body, never on top of it
+  function drawShineStars(k, t) {
+    const { age, env } = shineEnv(k);
+    if (env <= 0) return;
+    const rgb = shineRGB(k);
+    ctx.save();
+    const n = 7;
     for (let i = 0; i < n; i++) {
-      const life = 0.7, ph = (age + i * 0.23) % life, cyc = Math.floor((age + i * 0.23) / life);
-      const hsh = Math.sin((i + 1) * 91.7 + cyc * 13.3) * 43758.5; const fr = hsh - Math.floor(hsh);
-      const hsh2 = Math.sin((i + 1) * 47.1 + cyc * 7.9) * 12345.6; const fr2 = hsh2 - Math.floor(hsh2);
+      const life = 0.9, ph = (age + i * 0.31) % life, cyc = Math.floor((age + i * 0.31) / life);
+      const h1 = Math.sin((i + 1) * 91.7 + cyc * 13.3) * 43758.5, fr = h1 - Math.floor(h1);
+      const h2 = Math.sin((i + 1) * 47.1 + cyc * 7.9) * 12345.6, fr2 = h2 - Math.floor(h2);
       const p = k.seg[Math.floor(fr * k.seg.length)];
-      const spread = maxW(k) * 3 + 22 * scale;
-      const x = p.x + Math.cos(fr2 * TAU) * spread * (0.4 + fr), y = p.y + Math.sin(fr2 * TAU) * spread * (0.4 + fr);
-      const tw = Math.sin(ph / life * Math.PI);
-      ctx.fillStyle = `rgba(255, 255, 255, ${0.9 * tw * env})`;
-      star(x, y, (6 + 8 * fr) * scale * tw, fr2 * 0.6);
-      ctx.fillStyle = `rgba(${rgb}, ${0.5 * tw * env})`;
-      ctx.beginPath(); ctx.arc(x, y, (5 + 4 * fr) * scale * tw, 0, TAU); ctx.fill();
+      const d = maxW(k) * 1.5 + (8 + 10 * fr) * scale;
+      const x = p.x + Math.cos(fr2 * TAU) * d, y = p.y + Math.sin(fr2 * TAU) * d;
+      const tw = Math.sin(ph / life * Math.PI) * env;
+      if (tw < 0.05) continue;
+      ctx.fillStyle = `rgba(${rgb}, ${0.35 * tw})`;
+      ctx.beginPath(); ctx.arc(x, y, (3 + 2 * fr) * scale * tw, 0, TAU); ctx.fill();
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * tw})`;
+      star(x, y, (3.5 + 3 * fr) * scale * tw, fr2 * 0.6);
     }
     ctx.restore();
   }
   function drawTags(t) {
-    for (const k of koi) if (k.shine > 0) drawShine(k, t);
+    for (const k of koi) if (k.shine > 0) drawShineStars(k, t);
     for (const k of koi) {
       const selected = k.sel > 0 || k === cardKoi;
       if (selected) {
@@ -1874,19 +1884,50 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     toast(koiTouch ? '잉어 터치 켜짐 · 잉어를 누르면 이름을 지어 줄 수 있어요' : '잉어 터치 꺼짐 · 잉어 위를 눌러도 먹이만 떨어져요');
   });
   let pointer = null, pourTimer = 0;
+  // ---- camera: glide in on the koi whose card is open, glide back out when it closes ----
+  const cam = { s: 1, x: 0, y: 0 };
+  let camFor = null, camTween = null;
+  const camLayers = ['water', 'scene', 'paper'].map(id => $(id));
+  const calmMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  function toWorld(sx, sy) { return { x: (sx - cam.x) / cam.s, y: (sy - cam.y) / cam.s }; }
+  function camGoal() {
+    if (!cardKoi || calmMotion.matches) return { s: 1, x: 0, y: 0 };
+    const s = clamp(1.9 - cardKoi.size * 0.35, 1.35, 1.75);
+    const p = cardKoi.seg[Math.min(4, cardKoi.seg.length - 1)];
+    const top = card.hidden ? H : card.getBoundingClientRect().top;
+    const aimY = Math.max(90, top * 0.5);
+    return { s, x: clamp(W / 2 - p.x * s, W - W * s, 0), y: clamp(aimY - p.y * s, H - H * s, 0) };
+  }
+  function stepCam(dt) {
+    const g = camGoal();
+    // each open / close is one eased glide of fixed length (ease-in-out), so it starts softly and lands softly
+    if (camFor !== cardKoi) { camFor = cardKoi; camTween = { from: { ...cam }, t: 0, dur: cardKoi ? 0.8 : 0.7 }; }
+    if (camTween) {
+      camTween.t += dt;
+      const u = Math.min(1, camTween.t / camTween.dur), e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+      const f = camTween.from;
+      cam.s = f.s + (g.s - f.s) * e; cam.x = f.x + (g.x - f.x) * e; cam.y = f.y + (g.y - f.y) * e;
+      if (u >= 1) camTween = null;
+    } else { cam.s = g.s; cam.x = g.x; cam.y = g.y; }
+    const still = Math.abs(cam.s - 1) < 0.001 && Math.abs(cam.x) < 0.3 && Math.abs(cam.y) < 0.3 && g.s === 1;
+    if (still) { if (cam.s !== 1) { cam.s = 1; cam.x = 0; cam.y = 0; for (const el of camLayers) el.style.transform = ''; } }
+    else { const tf = `translate3d(${cam.x.toFixed(2)}px, ${cam.y.toFixed(2)}px, 0) scale(${cam.s.toFixed(4)})`; for (const el of camLayers) el.style.transform = tf; }
+    if (pointer && pointer.sx !== undefined) { const w = toWorld(pointer.sx, pointer.sy); pointer.x = w.x; pointer.y = w.y; }
+  }
   cvs.addEventListener('pointerdown', e => {
     if (document.body.classList.contains('menu-open')) setMenu(false);
     if (drawer.classList.contains('open') && innerWidth <= 640) { setDrawer(false); return; }
-    const hit = koiTouch ? koiAt(e.clientX, e.clientY) : null;
+    const w = toWorld(e.clientX, e.clientY);
+    const hit = koiTouch ? koiAt(w.x, w.y) : null;
     if (hit) { openCard(hit); return; }
-    if (inRock(e.clientX, e.clientY)) return;
+    if (inRock(w.x, w.y)) return;
     cvs.setPointerCapture(e.pointerId);
-    pointer = { id: e.pointerId, x: e.clientX, y: e.clientY, held: 0 };
-    handful(e.clientX, e.clientY, 4);
+    pointer = { id: e.pointerId, x: w.x, y: w.y, sx: e.clientX, sy: e.clientY, held: 0 };
+    handful(w.x, w.y, 4);
   });
   cvs.addEventListener('pointermove', e => {
-    if (pointer && e.pointerId === pointer.id) { pointer.x = e.clientX; pointer.y = e.clientY; return; }
-    if (e.pointerType === 'mouse') cvs.classList.toggle('over-koi', koiTouch && !!koiAt(e.clientX, e.clientY));
+    if (pointer && e.pointerId === pointer.id) { pointer.sx = e.clientX; pointer.sy = e.clientY; const w = toWorld(e.clientX, e.clientY); pointer.x = w.x; pointer.y = w.y; return; }
+    if (e.pointerType === 'mouse') { const w = toWorld(e.clientX, e.clientY); cvs.classList.toggle('over-koi', koiTouch && !!koiAt(w.x, w.y)); }
   });
   const endPointer = e => { if (pointer && e.pointerId === pointer.id) pointer = null; };
   cvs.addEventListener('pointerup', endPointer);
@@ -2320,10 +2361,12 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
       }
     }
 
+    stepCam(dt);
     if (water) water.draw(t);
     ctx.clearRect(0, 0, W, H);
     for (const k of koi) updateKoi(k, dt, t);
     const order = [...koi].sort((a, b) => a.size - b.size);
+    for (const k of koi) if (k.shine > 0) drawShineHalo(k, t);
     for (const k of order) drawKoi(ctx, k, scale, true, t);
     drawPellets(dt, t);
     drawWeeds(dt, t);
