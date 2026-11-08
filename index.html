@@ -50,7 +50,7 @@ body { font-family: var(--body); font-size: 15px; line-height: 1.5; -webkit-font
 #water, #scene { position: fixed; z-index: 0; inset: 0; width: 100vw; height: 100vh; display: block; }
 #water { background: radial-gradient(ellipse at 50% 50%, #1f6b52, #0c3a2d 75%); }
 #paper { position: fixed; inset: 0; z-index: 2; pointer-events: none; mix-blend-mode: multiply; opacity: 0.35; background-repeat: repeat, no-repeat; background-size: 220px 220px, 100% 100%; }
-#scene { z-index: 1; touch-action: none; cursor: crosshair; -webkit-tap-highlight-color: transparent; }
+#scene { z-index: 1; touch-action: pinch-zoom; cursor: crosshair; -webkit-tap-highlight-color: transparent; }
 #scene.over-koi { cursor: pointer; }
 
 .glass {
@@ -199,7 +199,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
 .stat-line strong { color: var(--cream); font-weight: 400; }
 .name-form { display: flex; gap: 8px; margin-top: 2px; }
 .name-form input {
-  flex: 1; min-width: 0; font: inherit; font-size: 15px; color: var(--cream);
+  flex: 1; min-width: 0; font: inherit; font-size: 16px; color: var(--cream);
   padding: 9px 12px; border-radius: 12px; border: 1px solid var(--line);
   background: rgba(241, 234, 217, 0.07);
 }
