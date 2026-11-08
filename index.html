@@ -92,6 +92,24 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
 .family.snd { top: calc(206px + env(safe-area-inset-top, 0px)); }
 .family.snd svg { width: 24px; height: 24px; }
 .family.tch { top: calc(270px + env(safe-area-inset-top, 0px)); }
+.family.cam { top: calc(334px + env(safe-area-inset-top, 0px)); }
+.family.shr { top: calc(398px + env(safe-area-inset-top, 0px)); }
+.family.cam svg, .family.shr svg { width: 24px; height: 24px; }
+.menu-open .family.cam { transition-delay: .12s; }
+.menu-open .family.shr { transition-delay: .15s; }
+.flash { position: fixed; inset: 0; z-index: 30; background: #fff; opacity: 0; pointer-events: none; }
+.flash.go { animation: flash .45s ease-out; }
+@keyframes flash { 0% { opacity: .85; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .flash.go { animation: none; } }
+.shot {
+  position: fixed; z-index: 12; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(420px, calc(100vw - 32px)); padding: 14px; border-radius: 22px;
+  background: var(--glass-strong); display: grid; gap: 12px;
+}
+.shot[hidden] { display: none !important; }
+.shot img { width: 100%; max-height: 60vh; object-fit: contain; border-radius: 12px; display: block; background: #0c3a2e; }
+.shot-btns { display: flex; gap: 8px; justify-content: flex-end; }
+.shot-note { margin: 0; font-size: 12px; color: var(--muted); }
 .family.tch svg { width: 24px; height: 24px; }
 .family.tch[aria-pressed="false"] { color: var(--muted); }
 .family.tch .slash { opacity: 0; transition: opacity .2s; }
@@ -304,6 +322,32 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
   </svg>
   <span class="lbl" id="touchLbl">잉어 터치 켜짐</span>
 </button>
+
+<button class="family cam menu-item glass" id="shotBtn" aria-label="연못 사진 찍기">
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.2l1.4-2h5.8l1.4 2h2.2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-9Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <circle cx="12" cy="13" r="3.4" stroke="currentColor" stroke-width="1.6"/>
+  </svg>
+  <span class="lbl">사진 찍기</span>
+</button>
+
+<button class="family shr menu-item glass" id="shareBtn" aria-label="연못 공유하기">
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M12 3.5v11M8 7.5l4-4 4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M7 11H6a1.5 1.5 0 0 0-1.5 1.5v6A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5v-6A1.5 1.5 0 0 0 18 11h-1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+  </svg>
+  <span class="lbl">공유하기</span>
+</button>
+
+<div class="flash" id="flash" aria-hidden="true"></div>
+<div class="shot glass" id="shot" hidden role="dialog" aria-label="찍은 사진">
+  <img id="shotImg" alt="방금 찍은 연못 사진">
+  <div class="shot-btns">
+    <button type="button" class="ghost-btn" id="shotClose">닫기</button>
+    <button type="button" class="primary-btn" id="shotSave">저장하기</button>
+  </div>
+  <p class="shot-note" id="shotNote">휴대폰에서는 사진을 길게 눌러서 저장할 수도 있어요.</p>
+</div>
 
 <div class="topstats glass" aria-label="연못 현황">
   <div class="stat"><small id="foodLbl">준 먹이</small><b><em id="foodN" style="font-style:normal">0</em><span>알</span></b></div>
@@ -1652,6 +1696,90 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
 
   let btnHold = null;
 
+  // ================= photo & share =================
+  const SITE_URL = 'https://moon-night-koi-pond.vercel.app';
+  const shotWaiters = [];
+  function composeShot() {
+    // called right after a frame is drawn, so the WebGL water is still on screen
+    const sc = Math.min(2, window.devicePixelRatio || 1);
+    const out = document.createElement('canvas');
+    out.width = Math.round(W * sc); out.height = Math.round(H * sc);
+    const o = out.getContext('2d');
+    o.drawImage($('water'), 0, 0, out.width, out.height);
+    o.drawImage(cvs, 0, 0, out.width, out.height);
+    // a small caption so the photo says where it came from
+    o.save(); o.scale(sc, sc);
+    const fs = Math.round(clamp(Math.min(W, H) * 0.032, 12, 18));
+    o.font = `700 ${fs}px "Gowun Batang", "Noto Serif KR", serif`;
+    const label = '달밤 잉어 연못', sub = SITE_URL.replace('https://', '');
+    o.textAlign = 'right'; o.textBaseline = 'bottom';
+    o.shadowColor = 'rgba(0,0,0,0.45)'; o.shadowBlur = 6;
+    o.fillStyle = 'rgba(246, 239, 220, 0.95)';
+    o.fillText(label, W - 16, H - 16 - fs * 1.05);
+    o.font = `400 ${Math.round(fs * 0.72)}px "Gowun Dodum", sans-serif`;
+    o.fillStyle = 'rgba(220, 235, 225, 0.85)';
+    o.fillText(sub, W - 16, H - 14);
+    o.restore();
+    return out.toDataURL('image/jpeg', 0.9);
+  }
+  const nextShot = () => new Promise(res => shotWaiters.push(res));
+  function dataUrlToBlob(url) {
+    const [head, b64] = url.split(','); const bin = atob(b64); const a = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
+    return new Blob([a], { type: (head.match(/:(.*?);/) || [])[1] || 'image/jpeg' });
+  }
+  const shotName = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `잉어연못-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.jpg`; };
+  let lastShot = null;
+  $('shotBtn').addEventListener('click', async () => {
+    setMenu(false);
+    const url = await nextShot();
+    if (!url) { toast('사진을 찍지 못했어요. 다시 한 번 눌러 주세요'); return; }
+    const f = $('flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
+    lastShot = { url, blob: dataUrlToBlob(url), name: shotName() };
+    $('shotImg').src = url;
+    $('shot').hidden = false;
+  });
+  $('shotClose').addEventListener('click', () => { $('shot').hidden = true; });
+  $('shotSave').addEventListener('click', async () => {
+    if (!lastShot) return;
+    const file = new File([lastShot.blob], lastShot.name, { type: 'image/jpeg' });
+    // inside Claude: hand the file to the viewer through the downloads capability
+    if (window.claude && typeof window.claude.use === 'function') {
+      try {
+        const dl = await window.claude.use('downloads');
+        if (dl) { const r = await dl.save({ filename: lastShot.name, data: lastShot.blob }); if (r && r.status === 'saved') toast('사진을 저장했어요'); return; }
+      } catch (e) { if (e && e.code === 'cancelled') return; }
+      toast('여기서는 사진을 저장할 수 없어요. 사진을 길게 눌러 저장해 주세요');
+      return;
+    }
+    // phones: the share sheet has "이미지 저장"
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: '달밤 잉어 연못' }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(lastShot.blob); a.download = lastShot.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast('사진을 저장했어요');
+  });
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch (e) {}
+    try {
+      const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); return ok;
+    } catch (e) { return false; }
+  }
+  $('shareBtn').addEventListener('click', async () => {
+    setMenu(false);
+    const n = koi.length;
+    const data = { title: '달밤 잉어 연못', text: `내 연못에 잉어 ${n}마리가 살고 있어요. 같이 먹이 주러 와요!`, url: SITE_URL };
+    if (navigator.share && !(window.claude && window.claude.use)) {
+      try { await navigator.share(data); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    if (await copyText(SITE_URL)) toast('연못 링크를 복사했어요. 원하는 곳에 붙여 넣어 주세요');
+    else toast(`연못 주소: ${SITE_URL.replace('https://', '')}`);
+  });
+
   // ================= boot =================
   resize();
   if (!load()) seed();
@@ -1975,6 +2103,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     drawGlints(dt, t);
     drawFloaters(dt, t);
     drawTags(t);
+    if (shotWaiters.length) { const w = shotWaiters.splice(0); let url = null; try { url = composeShot(); } catch (e) {} w.forEach(f => f(url)); }
 
     uiT += dt; saveT += dt;
     if (uiDirty ? uiT > 0.2 : uiT > 1) { updateUI(); uiDirty = false; uiT = 0; }
