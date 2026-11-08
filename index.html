@@ -525,8 +525,8 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
   }
   function makeGenome() {
     const roll = Math.random();
-    if (roll < 0.004) return makeMutant('catfish');   // 0.4%
-    if (roll < 0.006) return makeMutant('eel');       // 0.2%
+    if (roll < 0.001) return makeMutant('catfish');    // 0.1%  (1 in 1,000)
+    if (roll < 0.0015) return makeMutant('eel');       // 0.05% (1 in 2,000)
     const b = pickW(BREEDS);
     const g = { breed: b.name, label: null, base: C.white, spots: [], net: null, doitsu: null, metal: false, fin: null, finBase: null, ginrin: false, longFin: false, seed: Math.random() * 100 };
     b.make(g);
