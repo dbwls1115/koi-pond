@@ -3,36 +3,43 @@
     "stats": {
       ".read": true,
       "eaten": {
-        ".write": true,
-        ".validate": "newData.isNumber() && ((!data.exists() && newData.val() >= 0 && newData.val() <= 200) || (data.exists() && newData.val() >= data.val() && newData.val() <= data.val() + 200))"
+        ".write": "auth != null",
+        ".validate": "newData.isNumber() && newData.parent().parent().child('feeders').child(auth.uid).child('t').val() === now && ((!data.exists() && newData.val() >= 0 && newData.val() <= 100) || (data.exists() && newData.val() >= data.val() && newData.val() <= data.val() + 100))"
+      }
+    },
+    "feeders": {
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        "t": {
+          ".validate": "newData.val() === now && (!data.exists() || now - data.val() >= 2500)"
+        },
+        "$other": { ".validate": false }
       }
     },
     "presence": {
       ".read": true,
-      "$id": {
-        ".write": true,
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
         ".validate": "!newData.exists() || newData.val() === true"
       }
     },
     "events": {
       ".read": true,
       "$id": {
-        ".write": "!data.exists()",
-        ".validate": "newData.hasChildren(['k','t'])",
-        "k": {
-          ".validate": "newData.isString() && newData.val().matches(/^(catfish|albino|eel|blue)$/)"
-        },
-        "t": {
-          ".validate": "newData.val() === now"
-        },
-        "$other": {
-          ".validate": false
-        }
+        ".write": "auth != null && !data.exists()",
+        ".validate": "newData.hasChildren(['k', 't', 'u']) && newData.child('u').val() === auth.uid && newData.parent().parent().child('rareGate').child(auth.uid).val() === now",
+        "k": { ".validate": "newData.isString() && newData.val().matches(/^(catfish|albino|eel|blue)$/)" },
+        "t": { ".validate": "newData.val() === now" },
+        "u": { ".validate": "newData.isString()" },
+        "$other": { ".validate": false }
       }
     },
-    "$other": {
-      ".read": false,
-      ".write": false
-    }
+    "rareGate": {
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.val() === now && (!data.exists() || now - data.val() >= 60000)"
+      }
+    },
+    "$other": { ".read": false, ".write": false }
   }
 }
