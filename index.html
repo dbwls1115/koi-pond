@@ -1882,9 +1882,22 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     blip(rand(160, 220), rand(520, 700), 0.22, 0.09);
     grain(ac.currentTime + 0.012, rand(1200, 1800), 1.2, 0.18, 0.07);
   };
+  // Safari leaves the context 'suspended' or 'interrupted' after a tab switch and only lets a tap bring it back
+  function wakeAudio() {
+    if (!ac || ac.state === 'running') return;
+    if (ac.state === 'closed') { ac = null; startAudio(); return; }
+    try {
+      ac.resume().catch(() => {});
+      const unlock = ac.createBufferSource(); unlock.buffer = ac.createBuffer(1, 1, 22050);
+      unlock.connect(ac.destination); unlock.start(0);
+      master.gain.cancelScheduledValues(ac.currentTime);
+      master.gain.setTargetAtTime(0.5, ac.currentTime, 0.4);
+      scheduleDrip();
+    } catch (e) {}
+  }
   const firstTouch = () => {
     if (!soundOn) return;
-    if (!ac) startAudio(); else if (ac.state === 'suspended') ac.resume().catch(() => {});
+    if (!ac) startAudio(); else wakeAudio();
   };
   // Safari counts only some events as a real user gesture (touchend / click / keydown), so listen to all of them
   for (const ev of ['pointerdown', 'touchend', 'click', 'keydown']) document.addEventListener(ev, firstTouch, true);
@@ -1894,11 +1907,25 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     if (soundOn) { if (!ac) startAudio(); else { ac.resume().catch(() => {}); master.gain.setTargetAtTime(0.5, ac.currentTime, 0.4); scheduleDrip(); } }
     else if (ac) { master.gain.setTargetAtTime(0, ac.currentTime, 0.15); clearTimeout(dripTimer); setTimeout(() => { if (!soundOn) ac.suspend().catch(() => {}); }, 600); }
   });
+  let soundHintShown = false;
+  function backToPage() {
+    if (!ac || !soundOn) return;
+    ac.resume().then(() => { if (ac && ac.state === 'running') scheduleDrip(); }).catch(() => {});
+    // Safari often refuses to resume without a tap: say so once instead of staying silent
+    setTimeout(() => {
+      if (ac && soundOn && ac.state !== 'running' && !document.hidden && !soundHintShown) {
+        soundHintShown = true;
+        toast('화면을 한 번 누르면 물소리가 다시 나요');
+      }
+    }, 600);
+  }
   document.addEventListener('visibilitychange', () => {
     if (!ac) return;
-    if (document.hidden) ac.suspend().catch(() => {});
-    else if (soundOn) ac.resume().catch(() => {});
+    if (document.hidden) { soundHintShown = false; ac.suspend().catch(() => {}); }
+    else backToPage();
   });
+  addEventListener('pageshow', backToPage);
+  addEventListener('focus', backToPage);
   updateUI();
   let rzT = 0;
   addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => { resize(); initAmbient(); }, 120); });
