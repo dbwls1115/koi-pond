@@ -14,6 +14,25 @@
         ".validate": "!newData.exists() || newData.val() === true"
       }
     },
-    "$other": { ".read": false, ".write": false }
+    "events": {
+      ".read": true,
+      "$id": {
+        ".write": "!data.exists()",
+        ".validate": "newData.hasChildren(['k','t'])",
+        "k": {
+          ".validate": "newData.isString() && newData.val().matches(/^(catfish|albino|eel|blue)$/)"
+        },
+        "t": {
+          ".validate": "newData.val() === now"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
   }
 }

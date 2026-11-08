@@ -52,6 +52,31 @@ body { font-family: var(--body); font-size: 15px; line-height: 1.5; -webkit-font
 #paper { position: fixed; inset: 0; z-index: 2; pointer-events: none; mix-blend-mode: multiply; opacity: 0.35; background-repeat: repeat, no-repeat; background-size: 220px 220px, 100% 100%; }
 #scene { z-index: 1; touch-action: pinch-zoom; cursor: crosshair; -webkit-tap-highlight-color: transparent; }
 #scene.over-koi { cursor: pointer; }
+/* time of day: a tint laid over the pond (multiply), a moon glow and fireflies after dark */
+#sky { position: fixed; inset: 0; z-index: 3; pointer-events: none; mix-blend-mode: multiply; background: #fff; opacity: 0; transition: background 4s, opacity 4s; }
+#moon { position: fixed; inset: 0; z-index: 3; pointer-events: none; mix-blend-mode: screen; opacity: 0; transition: opacity 4s;
+  background: radial-gradient(circle at 70% 26%, rgba(225, 235, 255, 0.30) 0, rgba(200, 220, 255, 0.12) 9vmin, rgba(200, 220, 255, 0.04) 22vmin, transparent 36vmin); }
+
+/* rare koi reveal */
+.reveal { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; pointer-events: none; }
+.reveal[hidden] { display: none !important; }
+.reveal .veil { position: absolute; inset: 0; background: radial-gradient(circle at 50% 46%, rgba(8, 30, 44, 0.2), rgba(2, 8, 16, 0.72) 70%); animation: rvVeil 4.6s ease forwards; }
+.reveal .rays { position: absolute; left: 50%; top: 44%; width: 150vmax; height: 150vmax; transform: translate(-50%, -50%);
+  background: repeating-conic-gradient(from 0deg, rgba(143, 233, 255, 0.16) 0deg 5deg, transparent 5deg 18deg);
+  -webkit-mask: radial-gradient(circle, #000 0, rgba(0,0,0,.6) 18%, transparent 46%); mask: radial-gradient(circle, #000 0, rgba(0,0,0,.6) 18%, transparent 46%);
+  animation: rvSpin 14s linear infinite, rvFade 4.6s ease forwards; }
+.reveal .box { position: relative; text-align: center; display: grid; justify-items: center; gap: 4px; animation: rvPop 4.6s cubic-bezier(.2, .9, .25, 1.2) forwards; }
+.reveal .kicker { font-size: 13px; letter-spacing: 0.35em; color: #bff4ff; text-shadow: 0 0 10px rgba(120, 230, 255, 0.9); }
+.reveal canvas { width: 280px; height: 112px; filter: drop-shadow(0 0 18px rgba(120, 230, 255, 0.75)); }
+.reveal .nm { font-family: var(--display); font-size: 34px; font-weight: 700; color: #fff; text-shadow: 0 0 12px rgba(120, 230, 255, 0.95), 0 0 34px rgba(120, 230, 255, 0.6); }
+.reveal .odds { font-size: 13.5px; color: #cfeff7; }
+.reveal .odds b { color: #8fe9ff; font-weight: 400; }
+@keyframes rvVeil { 0% { opacity: 0; } 12% { opacity: 1; } 78% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes rvFade { 0% { opacity: 0; } 15% { opacity: 1; } 78% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes rvSpin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+@keyframes rvPop { 0% { opacity: 0; transform: scale(.6); } 14% { opacity: 1; transform: scale(1.06); } 22% { transform: scale(1); } 80% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.04); } }
+@media (prefers-reduced-motion: reduce) { .reveal .rays { animation: rvFade 4.6s ease forwards; } }
+#flies { position: fixed; inset: 0; z-index: 3; pointer-events: none; width: 100vw; height: 100vh; }
 
 .glass {
   background: var(--glass);
@@ -168,6 +193,9 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 .toast b { font-family: var(--display); color: var(--gold); }
+.toast.news { background: linear-gradient(120deg, rgba(14, 44, 60, 0.94), rgba(30, 24, 60, 0.94)); box-shadow: 0 0 0 1px rgba(143, 233, 255, 0.45), 0 0 24px rgba(120, 230, 255, 0.35); }
+.toast.news { max-width: calc(100vw - 32px); word-break: keep-all; }
+.toast.news b { white-space: nowrap; color: #8fe9ff; text-shadow: 0 0 8px rgba(120, 230, 255, 0.8); }
 
 .card {
   position: fixed; z-index: 7; left: 50%;
@@ -288,6 +316,9 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
 <canvas id="water" aria-hidden="true"></canvas>
 <div id="paper" aria-hidden="true"></div>
 <canvas id="scene" role="img" aria-label="정원 연못. 물을 누르면 먹이를 주고, 잉어를 누르면 이름을 지어 줄 수 있습니다."></canvas>
+<div id="sky" aria-hidden="true"></div>
+<div id="moon" aria-hidden="true"></div>
+<canvas id="flies" aria-hidden="true"></canvas>
 
 <button class="family menu glass" id="menuBtn" aria-expanded="false" aria-label="메뉴 열기">
   <svg viewBox="0 0 28 28" fill="none" aria-hidden="true">
@@ -356,6 +387,10 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
 </div>
 
 <div class="hint" id="hint">연못을 클릭해서 잉어에게 밥을 주세요</div>
+<div class="reveal" id="reveal" hidden aria-live="polite">
+  <div class="veil"></div><div class="rays"></div>
+  <div class="box"><div class="kicker">✦ 돌연변이 등장 ✦</div><canvas id="revealPic"></canvas><div class="nm" id="revealName"></div><div class="odds" id="revealOdds"></div></div>
+</div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <button class="family add menu-item glass" id="newBtn" aria-label="새 잉어 들이기">
@@ -615,6 +650,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
   function seed() {
     koi = []; given = 0; eatenTotal = 0;
     for (let i = 0; i < 3; i++) koi.push(makeKoi(makeGenome(), rand(0.55, 1.1)));
+    for (const k of koi) if (k.g.mutant) setTimeout(() => announceRare(k.g), 0);
   }
 
   // ================= reflection texture (painted once per size) =================
@@ -1720,6 +1756,8 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     koi.push(k); addRow(k);
     ripples.push({ x, y, t: 0, life: 1.8, r: 60 * scale, str: 1.2 });
     plop();
+    announceRare(g);
+    if (g.mutant && REVEAL_ON) { showReveal(g); saveDirty = true; updateUI(); return; }
     toast(g.mutant ? `돌연변이 <b>${esc(g.label)}</b>${josa(g.label, '이', '가')} 나타났어요! · 전설` : `${esc(g.label)} 잉어가 들어왔어요 · ${TIERS[g.tier]}`);
     saveDirty = true; updateUI();
   }
@@ -1767,11 +1805,40 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (cardKoi) closeCard(); else if (document.body.classList.contains('menu-open')) setMenu(false); else setDrawer(false); } });
 
   let toastTimer = 0;
-  function toast(html) {
+  function toast(html, ms = 2800, cls = '') {
     const el = $('toast');
-    el.innerHTML = html; el.classList.add('show');
+    el.innerHTML = html; el.className = 'toast show' + (cls ? ' ' + cls : '');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+    toastTimer = setTimeout(() => el.classList.remove('show'), ms);
+  }
+  // ---- the big moment when a mutant hatches in YOUR pond ----
+  const REVEAL_ON = false; // waiting for the owner's OK on the design
+  const RARE_ODDS = { catfish: '1,250', albino: '5,000', eel: '2,353', blue: '13,333' };
+  let revealT = 0;
+  function showReveal(g) {
+    const el = $('reveal');
+    el.hidden = true; void el.offsetWidth; el.hidden = false;
+    paintPortrait($('revealPic'), g, 280, 112);
+    $('revealName').textContent = g.label;
+    $('revealOdds').innerHTML = `전설 · 약 <b>${RARE_ODDS[rareKey(g)] || '1,000'}마리 중 1마리</b>`;
+    clearTimeout(revealT); revealT = setTimeout(() => { el.hidden = true; }, 4700);
+    try { if (ac && soundOn) { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => blip(f, f * 1.01, 0.12, 0.5), i * 110)); } } catch (e) {}
+  }
+  // ---- rare news: when someone anywhere meets a mutant, everyone in the pond hears about it ----
+  // only a fixed key travels between people, never free text, so nobody can push their own message
+  const RARE_NEWS = { catfish: '돌연변이 메기', albino: '알비노 메기', eel: '전기뱀장어', blue: '푸른 전기뱀장어' };
+  let rareSend = null, rareQueue = [];
+  function useRareSend(fn) { rareSend = fn; const q = rareQueue.splice(0); for (const k of q) { try { fn(k); } catch (e) {} } }
+  function rareKey(g) {
+    if (!g || !g.mutant) return null;
+    if (g.kind === 'catfish') return /알비노/.test(g.label) ? 'albino' : 'catfish';
+    return /푸른/.test(g.label) ? 'blue' : 'eel';
+  }
+  function announceRare(g) { const k = rareKey(g); if (!k) return; if (rareSend) { try { rareSend(k); } catch (e) {} } else if (rareQueue.length < 3) rareQueue.push(k); }
+  function hearRare(k) {
+    const label = RARE_NEWS[k];
+    if (!label) return;
+    toast(`✨ 어딘가에서 누군가 <b>${label}</b>${josa(label, '을', '를')} 만났어요!`, 5200, 'news');
   }
   let hinted = false;
   function hideHint() { if (!hinted) { hinted = true; $('hint').style.opacity = '0'; } }
@@ -1837,6 +1904,19 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     const o = out.getContext('2d');
     o.drawImage($('water'), 0, 0, out.width, out.height);
     o.drawImage(cvs, 0, 0, out.width, out.height);
+    // the same evening / night tint the viewer sees
+    try {
+      const sky = $('sky'), op = +getComputedStyle(sky).opacity;
+      if (op > 0.01) { o.save(); o.globalAlpha = op; o.globalCompositeOperation = 'multiply'; o.fillStyle = getComputedStyle(sky).backgroundColor; o.fillRect(0, 0, out.width, out.height); o.restore(); }
+      const mo = +getComputedStyle($('moon')).opacity;
+      if (mo > 0.01) {
+        o.save(); o.globalAlpha = mo; o.globalCompositeOperation = 'screen';
+        const g = o.createRadialGradient(out.width * 0.7, out.height * 0.28, 0, out.width * 0.7, out.height * 0.28, Math.min(out.width, out.height) * 0.3);
+        g.addColorStop(0, 'rgba(200, 220, 255, 0.34)'); g.addColorStop(1, 'rgba(200, 220, 255, 0)');
+        o.fillStyle = g; o.fillRect(0, 0, out.width, out.height); o.restore();
+      }
+      o.drawImage($('flies'), 0, 0, out.width, out.height);
+    } catch (e) {}
     // a small caption so the photo says where it came from
     o.save(); o.scale(sc, sc);
     const fs = Math.round(clamp(Math.min(W, H) * 0.032, 12, 18));
@@ -1949,6 +2029,8 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     if (room) {
       try {
         room.presence({ pond: 1 }).catch(() => {});
+        room.on('rare', msg => { if (!msg.isMe) hearRare(msg.data && msg.data.k); });
+        useRareSend(k => room.emit('rare', { k }).catch(() => {}));
         room.onPeers(ch => {
           const n = ch.peers.filter(p => p.kind === 'viewer').length;
           $('liveStat').hidden = n < 1;
@@ -1998,6 +2080,16 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
       fdb.ref('.info/connected').on('value', snap => {
         if (snap.val() !== true) return;
         me.onDisconnect().remove().then(() => me.set(true)).catch(() => {});
+      });
+      // rare news: a fixed key and the server's time, nothing else (the database rules allow only that)
+      let skew = 0;
+      fdb.ref('.info/serverTimeOffset').on('value', snap => { skew = +snap.val() || 0; });
+      const sentKeys = new Set();
+      useRareSend(k => { const r = fdb.ref('events').push(); sentKeys.add(r.key); r.set({ k, t: firebase.database.ServerValue.TIMESTAMP }).catch(() => {}); });
+      fdb.ref('events').limitToLast(3).on('child_added', snap => {
+        const v = snap.val() || {};
+        if (sentKeys.has(snap.key) || typeof v.t !== 'number' || Date.now() + skew - v.t > 20000) return;
+        hearRare(v.k);
       });
       fdb.ref('presence').on('value', snap => {
         const n = snap.numChildren();
@@ -2158,18 +2250,22 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
       unlock.connect(ac.destination); unlock.start(0);
     } catch (e) {}
   }
+  // iPhone Safari unlocks sound only when a finger LIFTS (touchend / pointerup), and that is true for a
+  // drag as well as a tap. A sound built when the finger went DOWN is born locked and may never start, so
+  // for touch we build it only on lift. Mouse and keyboard can start it right away.
   const firstTouch = (e) => {
     if (!soundOn) return;
-    if (!ac) { startAudio(); return; }
+    const down = e.type === 'pointerdown' || e.type === 'touchstart';
+    const touchDown = down && (e.type === 'touchstart' || e.pointerType !== 'mouse');
+    if (!ac) { if (!touchDown) startAudio(); return; }
     if (ac.state === 'running') return;
-    // A sound that has never played yet (first tap) is still starting up: just help it along.
-    // Only a sound that did play and then got stuck (after a tab switch) is rebuilt, and only on a real tap.
-    const fresh = !ac._ran || performance.now() - builtAt < 2000;
-    if (fresh || (e && e.type === 'pointerdown')) { nudgeAudio(); return; }
+    if (down) { nudgeAudio(); return; }
+    // on a lift: a sound built a moment ago in this same gesture just needs a nudge; one that is older and
+    // still silent (built outside a gesture, or stuck after a tab switch) is thrown away and rebuilt here
+    if (performance.now() - builtAt < 400) { nudgeAudio(); return; }
     rebuildAudio();
   };
-  // Safari counts only some events as a real user gesture (touchend / click / keydown), so listen to all of them
-  for (const ev of ['pointerdown', 'touchend', 'click', 'keydown']) document.addEventListener(ev, firstTouch, true);
+  for (const ev of ['pointerdown', 'touchstart', 'pointerup', 'touchend', 'click', 'keydown']) document.addEventListener(ev, firstTouch, { capture: true, passive: true });
   soundBtn.addEventListener('click', () => {
     soundOn = !soundOn; syncSound();
     try { localStorage.setItem('koi-sound', soundOn ? 'on' : 'off'); } catch (e) {}
@@ -2197,6 +2293,60 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
   });
   addEventListener('pagehide', shutAudio);
   addEventListener('pageshow', backToPage);
+  // ================= time of day (the viewer's own clock, so it follows their country) =================
+  const dayNight = (() => {
+    const sky = $('sky'), moon = $('moon'), fc = $('flies'), fx = fc.getContext('2d');
+    const forced = (() => { try { const v = new URLSearchParams(location.search).get('hour'); return v === null ? null : +v; } catch (e) { return null; } })();
+    // key points through a day: hour, tint colour (multiplied over the pond), tint strength, night amount
+    const KEYS = [
+      [0, [96, 128, 196], 1, 1], [4.5, [96, 128, 196], 1, 1], [6, [255, 190, 190], 0.7, 0.25], [7.5, [255, 255, 255], 0, 0],
+      [16.5, [255, 255, 255], 0, 0], [18, [255, 165, 95], 0.85, 0.1], [19.5, [130, 120, 190], 0.95, 0.8], [20.5, [96, 128, 196], 1, 1], [24, [96, 128, 196], 1, 1],
+    ];
+    let night = 0, flies = [];
+    function hourNow() { if (forced !== null && !isNaN(forced)) return ((forced % 24) + 24) % 24; const d = new Date(); return d.getHours() + d.getMinutes() / 60; }
+    function apply() {
+      const h = hourNow();
+      let a = KEYS[0], b = KEYS[1];
+      for (let i = 0; i < KEYS.length - 1; i++) if (h >= KEYS[i][0] && h <= KEYS[i + 1][0]) { a = KEYS[i]; b = KEYS[i + 1]; break; }
+      const t = (h - a[0]) / Math.max(0.001, b[0] - a[0]);
+      const mix = (x, y) => x + (y - x) * t;
+      const col = a[1].map((c, i) => Math.round(mix(c, b[1][i])));
+      sky.style.background = `rgb(${col.join(',')})`;
+      sky.style.opacity = mix(a[2], b[2]).toFixed(3);
+      night = mix(a[3], b[3]);
+      moon.style.opacity = Math.max(0, (night - 0.4) / 0.6).toFixed(3);
+      document.body.classList.toggle('is-night', night > 0.5);
+    }
+    function size() { const pr = Math.min(2, devicePixelRatio || 1); fc.width = Math.round(innerWidth * pr); fc.height = Math.round(innerHeight * pr); fx.setTransform(pr, 0, 0, pr, 0, 0); }
+    function seedFlies() { const n = Math.round(Math.min(26, 8 + innerWidth * innerHeight / 60000)); flies = Array.from({ length: n }, () => ({ x: rand(0, innerWidth), y: rand(0, innerHeight), a: rand(0, TAU), v: rand(6, 16), ph: rand(0, TAU), sp: rand(0.6, 1.4) })); }
+    let lastT = 0;
+    function draw(now) {
+      requestAnimationFrame(draw);
+      const dt = Math.min(0.05, (now - lastT) / 1000 || 0); lastT = now;
+      fx.clearRect(0, 0, innerWidth, innerHeight);
+      const k = Math.max(0, (night - 0.5) / 0.5);
+      if (k <= 0 || document.hidden) return;
+      const t = now / 1000;
+      for (const f of flies) {
+        f.a += rand(-1.2, 1.2) * dt; f.x += Math.cos(f.a) * f.v * dt; f.y += Math.sin(f.a) * f.v * dt;
+        if (f.x < -20) f.x = innerWidth + 20; if (f.x > innerWidth + 20) f.x = -20;
+        if (f.y < -20) f.y = innerHeight + 20; if (f.y > innerHeight + 20) f.y = -20;
+        const glow = Math.max(0, Math.sin(t * f.sp + f.ph)) ** 3 * k;
+        if (glow < 0.02) continue;
+        const r = 14 * glow + 3;
+        const g = fx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r);
+        g.addColorStop(0, `rgba(235, 255, 170, ${0.95 * glow})`); g.addColorStop(0.25, `rgba(200, 255, 120, ${0.45 * glow})`); g.addColorStop(1, 'rgba(180, 255, 100, 0)');
+        fx.fillStyle = g; fx.beginPath(); fx.arc(f.x, f.y, r, 0, TAU); fx.fill();
+      }
+    }
+    size(); seedFlies(); apply();
+    setInterval(apply, 60000);
+    addEventListener('resize', () => { size(); seedFlies(); });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) apply(); });
+    requestAnimationFrame(draw);
+    return { get night() { return night; } };
+  })();
+
   updateUI();
   let rzT = 0;
   addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => { resize(); initAmbient(); }, 120); });
