@@ -280,6 +280,29 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
 .del:hover { background: rgba(240, 160, 126, 0.14); color: #f0a07e; }
 .del.arm { background: #c4512f; color: #fff6ec; padding: 0 11px; }
 .empty { padding: 26px 12px; text-align: center; color: var(--muted); font-size: 13.5px; }
+/* pick several koi and let them go at once */
+.head-btns { display: flex; align-items: center; gap: 4px; }
+.sel-btn { font-size: 13px; padding: 6px 12px; border-radius: 999px; color: var(--cream); background: rgba(241, 234, 217, 0.1); }
+.sel-btn:hover { background: rgba(241, 234, 217, 0.16); }
+.selecting .sel-btn { background: var(--cream); color: #1a2226; }
+.check { grid-column: 3; grid-row: 1 / span 3; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid rgba(241, 234, 217, 0.45); display: none; place-items: center; margin-right: 4px; }
+.check svg { width: 14px; height: 14px; opacity: 0; transition: opacity .12s; }
+.selecting .row .del { display: none; }
+.selecting .row .check { display: grid; }
+.selecting .row .name { pointer-events: none; }
+.row.picked { background: rgba(207, 85, 48, 0.16); box-shadow: inset 0 0 0 1.5px rgba(240, 160, 126, 0.65); }
+.row.picked .check { background: #c4512f; border-color: #c4512f; color: #fff6ec; }
+.row.picked .check svg { opacity: 1; }
+.selbar { display: none; align-items: center; gap: 8px; }
+.selecting .selbar { display: flex; }
+.selecting .drawer-foot > :not(.selbar) { display: none; }
+.selbar .count { margin-right: auto; font-size: 13px; color: var(--muted); }
+.selbar .count b { color: var(--cream); font-weight: 700; }
+.selbar .ghost { font-size: 13px; padding: 8px 10px; border-radius: 10px; color: var(--muted); }
+.selbar .ghost:hover { color: var(--cream); background: rgba(241, 234, 217, 0.08); }
+.selbar .go { font-size: 13.5px; font-weight: 700; padding: 8px 14px; border-radius: 10px; background: #c4512f; color: #fff6ec; }
+.selbar .go:disabled { opacity: .4; cursor: default; }
+.selbar .go.arm { background: #e0633b; box-shadow: 0 0 0 2px rgba(240, 160, 126, 0.5); }
 .drawer-foot { padding: 12px 18px 16px; border-top: 1px solid var(--line); display: grid; gap: 6px; }
 .adopt-note { font-size: 12px; color: var(--muted); margin: 0; }
 .reset { justify-self: start; font-size: 12px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; padding: 2px 0; }
@@ -390,11 +413,17 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
       <h2>연못 식구</h2>
       <p id="stats">잉어 6마리 · 뿌린 먹이 0알</p>
     </div>
-    <button class="close" id="drawerClose" aria-label="닫기"><svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+    <div class="head-btns"><button type="button" class="sel-btn" id="selBtn" aria-pressed="false">여러 마리 선택</button>
+    <button class="close" id="drawerClose" aria-label="닫기"><svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button></div>
   </div>
   <ul class="list" id="list"></ul>
   <p class="empty" id="emptyRow" hidden>연못이 비었어요. 왼쪽 위 + 버튼으로 잉어를 들여 보세요.</p>
   <div class="drawer-foot">
+    <div class="selbar" id="selBar">
+      <span class="count" id="selCount"><b>0</b>마리 선택</span>
+      <button type="button" class="ghost" id="selAll">모두 선택</button>
+      <button type="button" class="go" id="selGo" disabled>내보내기</button>
+    </div>
     <p class="adopt-note">칸을 누르면 연못에서 그 잉어를 찾아 줘요. + 버튼으로 새 잉어를 들일 수 있어요.</p>
     <button type="button" class="reset" id="resetBtn">연못 처음부터 다시 시작</button>
   </div>
@@ -1689,21 +1718,71 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
       clearTimeout(delTimer);
       removeKoi(k);
     });
+    const check = document.createElement('span'); check.className = 'check'; check.setAttribute('aria-hidden', 'true');
+    check.innerHTML = '<svg viewBox="0 0 14 14" fill="none"><path d="M3 7.2l2.6 2.6L11 4.4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     li.tabIndex = 0;
     li.setAttribute('role', 'button');
     const pick = () => {
+      if (selecting) { togglePicked(k); return; }
       for (const o of koi) o.sel = 0;
       k.sel = 4;
       updateUI();
       if (innerWidth <= 640) setDrawer(false);
     };
-    li.addEventListener('click', e => { if (e.target === input) return; pick(); });
+    li.addEventListener('click', e => { if (e.target === input && !selecting) return; pick(); });
     li.addEventListener('keydown', e => { if (e.target === li && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); pick(); } });
-    li.append(pc, input, del, meta, belly);
+    li.append(pc, input, del, check, meta, belly);
     list.appendChild(li);
     rows.set(k, { li, input, meta, del, bar: belly.firstChild });
   }
-  function removeKoi(k) {
+  // ---- select several and let them go together ----
+  let selecting = false, selArm = 0;
+  const picked = new Set();
+  function renderSel() {
+    for (const [k, r] of rows) { r.li.classList.toggle('picked', picked.has(k)); r.li.setAttribute('aria-pressed', selecting ? String(picked.has(k)) : null); if (!selecting) r.li.removeAttribute('aria-pressed'); }
+    const n = picked.size, all = n >= koi.length;
+    $('selCount').innerHTML = all && n ? '한 마리는 남겨야 해요' : `<b>${n}</b>마리 선택`;
+    $('selAll').textContent = n && n >= koi.length - 1 ? '선택 해제' : '모두 선택';
+    const go = $('selGo');
+    go.disabled = !n || all;
+    if (go.disabled || !selArm) { clearTimeout(selArm); selArm = 0; go.classList.remove('arm'); go.textContent = n && !all ? `${n}마리 내보내기` : '내보내기'; }
+  }
+  function setSelecting(on) {
+    selecting = on; picked.clear(); clearTimeout(selArm); selArm = 0;
+    drawer.classList.toggle('selecting', on);
+    $('selBtn').setAttribute('aria-pressed', String(on));
+    $('selBtn').textContent = on ? '완료' : '여러 마리 선택';
+    renderSel();
+  }
+  function togglePicked(k) {
+    if (picked.has(k)) picked.delete(k); else picked.add(k);
+    clearTimeout(selArm); selArm = 0;
+    renderSel();
+  }
+  $('selBtn').addEventListener('click', () => setSelecting(!selecting));
+  $('selAll').addEventListener('click', () => {
+    // "all" leaves the first koi in the list behind, since the pond can never be empty
+    if (picked.size && picked.size >= koi.length - 1) picked.clear();
+    else { picked.clear(); koi.slice(1).forEach(k => picked.add(k)); }
+    clearTimeout(selArm); selArm = 0;
+    renderSel();
+  });
+  $('selGo').addEventListener('click', () => {
+    const go = $('selGo'), n = picked.size;
+    if (!n || n >= koi.length) return;
+    if (!selArm) {
+      go.classList.add('arm'); go.textContent = `정말 ${n}마리를 보낼까요?`;
+      selArm = setTimeout(() => { selArm = 0; renderSel(); }, 3500);
+      return;
+    }
+    clearTimeout(selArm); selArm = 0;
+    const gone = [...picked];
+    for (const k of gone) removeKoi(k, true);
+    toast(`잉어 <b>${gone.length}마리</b>가 연못을 떠났어요`);
+    setSelecting(false);
+  });
+
+  function removeKoi(k, quiet) {
     if (koi.length <= 1) return;
     if (cardKoi === k) closeCard();
     const i = koi.indexOf(k);
@@ -1714,7 +1793,8 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     rows.delete(k);
     const h = k.seg[0];
     ripples.push({ x: h.x, y: h.y, t: 0, life: 1.6, r: 50 * scale, str: 1 });
-    toast(k.name ? `<b>${esc(k.name)}</b>${josa(k.name, '이', '가')} 연못을 떠났어요` : `${esc(k.g.label)} 잉어가 연못을 떠났어요`);
+    if (!quiet) toast(k.name ? `<b>${esc(k.name)}</b>${josa(k.name, '이', '가')} 연못을 떠났어요` : `${esc(k.g.label)} 잉어가 연못을 떠났어요`);
+    picked.delete(k);
     saveDirty = true; updateUI();
   }
   function updateUI() {
@@ -1820,6 +1900,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
   function setDrawer(open) {
     if (open) setMenu(false);
     drawer.classList.toggle('open', open);
+    if (!open && selecting) setSelecting(false);
     drawer.inert = !open;
     $('familyBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
   }
