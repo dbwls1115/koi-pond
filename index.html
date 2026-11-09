@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="900264ceb7e2">
+<meta name="build" content="81b5165e8dcf">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="description" content="연못을 눌러 잉어에게 먹이를 주고, 31가지 품종의 잉어를 키우며 이름을 지어 주세요.">
 <meta property="og:title" content="달밤 잉어 연못">
@@ -273,6 +273,8 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
 .row .name:focus { outline: 2px solid var(--gold); background: rgba(241, 234, 217, 0.1); }
 .meta { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .meta strong { color: var(--cream); font-weight: 400; }
+.meta .m1, .meta .m2 { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meta .m2 { margin-top: 1px; }
 .meta .tier { font-size: 10.5px; padding: 0 6px; margin-right: 2px; vertical-align: 1px; }
 .belly { height: 4px; border-radius: 2px; background: rgba(241, 234, 217, 0.12); overflow: hidden; margin-top: 3px; }
 .belly i { display: block; height: 100%; background: var(--gold); border-radius: 2px; transition: width .5s; }
@@ -1867,7 +1869,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     $('countN').textContent = koi.length;
     for (const k of koi) {
       const r = rows.get(k);
-      r.meta.innerHTML = `<span class="tier t${k.g.tier || 0}">${TIERS[k.g.tier || 0]}</span> ${esc(k.g.label)} · <strong>${cm(k)}cm</strong> · ${k.eaten.toLocaleString('ko-KR')}알 · ${mood(k.full)}`;
+      r.meta.innerHTML = `<span class="m1"><span class="tier t${k.g.tier || 0}">${TIERS[k.g.tier || 0]}</span> ${esc(k.g.label)}</span><span class="m2"><strong>${cm(k)}cm</strong> · 먹이 ${k.eaten.toLocaleString('ko-KR')}알 · ${mood(k.full)}</span>`;
       r.bar.style.width = (k.full * 10).toFixed(0) + '%';
       if (document.activeElement !== r.input && r.input.value !== k.name) r.input.value = k.name;
       r.li.classList.toggle('active', k.sel > 0 || k === cardKoi);
