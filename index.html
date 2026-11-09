@@ -271,14 +271,15 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
 .row:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
 .del {
   grid-column: 3; grid-row: 1 / span 3;
-  min-width: 34px; height: 34px; padding: 0 8px; border-radius: 10px;
-  display: grid; place-items: center; color: var(--muted);
-  font-size: 12.5px; white-space: nowrap;
+  min-width: 46px; height: 46px; padding: 0 10px; border-radius: 14px;
+  display: grid; place-items: center; color: #e9b8a3;
+  background: rgba(240, 160, 126, 0.1); border: 1px solid rgba(240, 160, 126, 0.22);
+  font-size: 14px; font-weight: 700; white-space: nowrap;
   transition: background .15s, color .15s;
 }
-.del svg { width: 17px; height: 17px; }
+.del svg { width: 22px; height: 22px; }
 .del:hover { background: rgba(240, 160, 126, 0.14); color: #f0a07e; }
-.del.arm { background: #c4512f; color: #fff6ec; padding: 0 11px; }
+.del.arm { background: #c4512f; border-color: #c4512f; color: #fff6ec; padding: 0 14px; }
 .empty { padding: 26px 12px; text-align: center; color: var(--muted); font-size: 13.5px; }
 /* pick several koi and let them go at once */
 .head-btns { display: flex; align-items: center; gap: 4px; }
@@ -307,9 +308,9 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
 .selecting .drawer-foot > :not(.selbar) { display: none; }
 .selbar .count { margin-right: auto; font-size: 13px; color: var(--muted); }
 .selbar .count b { color: var(--cream); font-weight: 700; }
-.selbar .ghost { font-size: 13px; padding: 8px 10px; border-radius: 10px; color: var(--muted); }
+.selbar .ghost { font-size: 14px; min-height: 46px; padding: 10px 12px; border-radius: 12px; color: var(--muted); }
 .selbar .ghost:hover { color: var(--cream); background: rgba(241, 234, 217, 0.08); }
-.selbar .go { font-size: 13.5px; font-weight: 700; padding: 8px 14px; border-radius: 10px; background: #c4512f; color: #fff6ec; }
+.selbar .go { font-size: 15px; font-weight: 700; min-height: 46px; padding: 10px 18px; border-radius: 14px; background: #c4512f; color: #fff6ec; }
 .selbar .go:disabled { opacity: .4; cursor: default; }
 .selbar .go.arm { background: #e0633b; box-shadow: 0 0 0 2px rgba(240, 160, 126, 0.5); }
 .drawer-foot { padding: 12px 18px 16px; border-top: 1px solid var(--line); display: grid; gap: 6px; }
