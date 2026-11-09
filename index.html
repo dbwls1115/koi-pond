@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<meta name="build" content="d57e13e08dcb">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="description" content="연못을 눌러 잉어에게 먹이를 주고, 31가지 품종의 잉어를 키우며 이름을 지어 주세요.">
 <meta property="og:title" content="달밤 잉어 연못">
@@ -168,6 +169,13 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
   opacity: 0; pointer-events: none; transition: opacity .35s, transform .35s;
   max-width: calc(100vw - 150px); text-align: center;
 }
+/* "a new version is out" pill (website only) */
+.update { position: fixed; z-index: 11; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px);
+  display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 16px; border-radius: 999px; background: var(--glass-strong);
+  font-size: 14px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .35s, transform .35s; }
+.update.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.update button { min-height: 38px; padding: 0 16px; border-radius: 999px; background: var(--cream); color: #1a2226; font-weight: 700; }
+.update .x { min-height: 38px; width: 38px; padding: 0; background: none; color: var(--muted); font-weight: 400; font-size: 18px; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 .toast b { font-family: var(--display); color: var(--gold); }
 .toast.news { background: linear-gradient(120deg, rgba(14, 44, 60, 0.94), rgba(30, 24, 60, 0.94)); box-shadow: 0 0 0 1px rgba(143, 233, 255, 0.45), 0 0 24px rgba(120, 230, 255, 0.35); }
@@ -395,6 +403,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
 </div>
 
 <div class="hint" id="hint">연못을 클릭해서 잉어에게 밥을 주세요</div>
+<div class="update glass" id="updateBar" role="status" aria-live="polite"><span>연못이 새로워졌어요</span><button type="button" id="updateGo">새로고침</button><button type="button" class="x" id="updateX" aria-label="나중에">×</button></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <button class="family add menu-item glass" id="newBtn" aria-label="새 잉어 들이기">
@@ -2428,6 +2437,28 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
   for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, e => e.preventDefault(), { passive: false });
   document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
   document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
+  // ---- tell people when a newer version of the website is out ----
+  (() => {
+    const meta = document.querySelector('meta[name="build"]');
+    if (!meta || window.claude) return; // only on the website, which stamps each build
+    const mine = meta.content, bar = $('updateBar');
+    let told = false, lastCheck = 0;
+    async function check() {
+      if (told || Date.now() - lastCheck < 60000) return;
+      lastCheck = Date.now();
+      try {
+        const html = await fetch('/?build-check=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : '');
+        const m = /<meta name="build" content="([^"]+)"/.exec(html);
+        if (m && m[1] !== mine) { told = true; bar.classList.add('show'); }
+      } catch (e) {}
+    }
+    $('updateGo').addEventListener('click', () => { try { save(); } catch (e) {} location.reload(); });
+    $('updateX').addEventListener('click', () => bar.classList.remove('show'));
+    setInterval(check, 5 * 60 * 1000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+    setTimeout(check, 30000);
+  })();
+
   updateUI();
   let rzT = 0;
   addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => { resize(); initAmbient(); }, 120); });
