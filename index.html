@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="02fd90abeb61">
+<meta name="build" content="900264ceb7e2">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="description" content="연못을 눌러 잉어에게 먹이를 주고, 31가지 품종의 잉어를 키우며 이름을 지어 주세요.">
 <meta property="og:title" content="달밤 잉어 연못">
@@ -941,7 +941,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
       const y = bottom ? H + fy * u : fy * u;
       const tone = rnd(3);
       return {
-        x, y, r: r * u * (0.9 + Math.random() * 0.15), rot: rand(0, TAU), notch: rand(0.28, 0.42),
+        x, y, r: r * u * 0.72 * (0.9 + Math.random() * 0.15), rot: rand(0, TAU), notch: rand(0.28, 0.42),
         light: ['#62ad55', '#56a04e', '#6db85e'][tone], dark: ['#2f7a3c', '#276b36', '#358444'][tone],
         lotus: Math.random() < 0.35,
       };
@@ -1076,7 +1076,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     }
     for (const p of lilies) {
       const half = p.r + U * 0.65 + 34 * scale;
-      const la = rand(0, TAU), ld = p.r * rand(0.1, 0.45), lr = U * rand(0.42, 0.55);
+      const la = rand(0, TAU), ld = p.r * rand(0.1, 0.45), lr = U * 0.78 * rand(0.42, 0.55);
       const img = sprite(half * 2, (c, h) => {
         drawLily(c, { ...p, x: h, y: h });
         if (p.lotus) drawLotus(c, h + Math.cos(la) * ld, h + Math.sin(la) * ld, lr);
