@@ -1734,8 +1734,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     li.setAttribute('role', 'button');
     const pick = () => {
       if (selecting) { togglePicked(k); return; }
-      for (const o of koi) o.sel = 0;
-      k.sel = 4;
+      markOnly(k, 4);
       updateUI();
       if (innerWidth <= 640) setDrawer(false);
     };
@@ -1856,18 +1855,20 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     const k = cardKoi, had = !!k.name;
     k.name = v;
     toast(had ? `이제 <b>${esc(v)}</b>${josa(v, '이', '가')}라고 불러요` : `<b>${esc(v)}</b>${josa(v, '이', '가')} 새 이름을 얻었어요`);
-    k.sel = 2.5;
+    markOnly(k, 2.5);
     closeCard();
     uiDirty = true; saveDirty = true;
   });
 
+  // only one koi is ever pointed out at a time: marking a new one clears the old
+  function markOnly(k, sec) { for (const o of koi) o.sel = 0; k.sel = sec; }
   function adoptKoi() {
     if (koi.length >= MAX_KOI) { toast(`연못이 꽉 찼어요. ${MAX_KOI}마리까지 함께 살 수 있어요`); return; }
     const g = makeGenome();
     const k = makeKoi(g, rand(0.55, 1.1));
     const x = k.seg[0].x, y = k.seg[0].y;
-    k.sel = 3;
     koi.push(k); addRow(k);
+    markOnly(k, 3);
     ripples.push({ x, y, t: 0, life: 1.8, r: 60 * scale, str: 1.2 });
     plop();
     announceRare(g);
