@@ -285,7 +285,11 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
 .sel-btn { font-size: 13px; padding: 6px 12px; border-radius: 999px; color: var(--cream); background: rgba(241, 234, 217, 0.1); }
 .sel-btn:hover { background: rgba(241, 234, 217, 0.16); }
 .selecting .sel-btn { background: var(--cream); color: #1a2226; }
-.check { display: none; }
+.check { grid-column: 3; grid-row: 1 / span 3; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid rgba(241, 234, 217, 0.45); display: none; place-items: center; margin-right: 4px; transition: background .15s, border-color .15s; }
+.check svg { width: 14px; height: 14px; opacity: 0; transition: opacity .12s; }
+.selecting .row .check { display: grid; }
+.row.picked .check { background: #c4512f; border-color: #c4512f; color: #fff6ec; }
+.row.picked .check svg { opacity: 1; }
 .row .name { grid-column: 2; grid-row: 1; }
 .row .meta { grid-column: 2; grid-row: 2; }
 .row .belly { grid-column: 2; grid-row: 3; }
@@ -1724,7 +1728,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
       removeKoi(k);
     });
     const check = document.createElement('span'); check.className = 'check'; check.setAttribute('aria-hidden', 'true');
-    check.innerHTML = '<svg viewBox="0 0 14 14" fill="none"><path d="M3.2 7.3l2.4 2.3 5.2-5.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    check.innerHTML = '<svg viewBox="0 0 14 14" fill="none"><path d="M3 7.2l2.6 2.6L11 4.4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     li.tabIndex = 0;
     li.setAttribute('role', 'button');
     const pick = () => {
