@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="d57e13e08dcb">
+<meta name="build" content="8af4750f3ab2">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="description" content="연못을 눌러 잉어에게 먹이를 주고, 31가지 품종의 잉어를 키우며 이름을 지어 주세요.">
 <meta property="og:title" content="달밤 잉어 연못">
@@ -92,14 +92,17 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
 .menu-open .menu .b2 { opacity: 0; }
 .menu-open .menu .b3 { transform: translateY(-5px) rotate(-45deg); }
 .family.add svg { width: 24px; height: 24px; }
-.family.snd { top: calc(206px + env(safe-area-inset-top, 0px)); }
+.family.dexb { top: calc(206px + env(safe-area-inset-top, 0px)); }
+.family.dexb svg { width: 24px; height: 24px; }
+.menu-open .family.dexb { transition-delay: .05s; }
+.family.snd { top: calc(270px + env(safe-area-inset-top, 0px)); }
 .family.snd svg { width: 24px; height: 24px; }
-.family.tch { top: calc(270px + env(safe-area-inset-top, 0px)); }
-.family.cam { top: calc(334px + env(safe-area-inset-top, 0px)); }
-.family.shr { top: calc(398px + env(safe-area-inset-top, 0px)); }
+.family.tch { top: calc(334px + env(safe-area-inset-top, 0px)); }
+.family.cam { top: calc(398px + env(safe-area-inset-top, 0px)); }
+.family.shr { top: calc(462px + env(safe-area-inset-top, 0px)); }
 .family.cam svg, .family.shr svg { width: 24px; height: 24px; }
 .menu-open .family.cam { transition-delay: .12s; }
-.menu-open .family.shr { transition-delay: .15s; }
+.menu-open .family.shr { transition-delay: .18s; }
 .flash { position: fixed; inset: 0; z-index: 30; background: #fff; opacity: 0; pointer-events: none; }
 .flash.go { animation: flash .45s ease-out; }
 @keyframes flash { 0% { opacity: .85; } 100% { opacity: 0; } }
@@ -323,6 +326,31 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
 .selbar .go.arm { background: #e0633b; box-shadow: 0 0 0 2px rgba(240, 160, 126, 0.5); }
 .drawer-foot { padding: 12px 18px 16px; border-top: 1px solid var(--line); display: grid; gap: 6px; }
 .adopt-note { font-size: 12px; color: var(--muted); margin: 0; }
+/* ---- koi field guide (도감) ---- */
+.dex { position: fixed; z-index: 12; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(560px, calc(100vw - 20px)); height: min(760px, calc(100vh - 24px)); border-radius: 24px; background: var(--glass-strong);
+  display: flex; flex-direction: column; overflow: hidden; }
+.dex[hidden] { display: none !important; }
+.dex-head { padding: 16px 16px 10px 20px; display: grid; gap: 8px; }
+.dex-top { display: flex; align-items: center; justify-content: space-between; }
+.dex-head h2 { margin: 0; font-family: var(--display); font-size: 21px; }
+.dex-prog { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.dex-prog b { color: var(--cream); font-size: 15px; }
+.dex-bar { flex: 1; height: 6px; border-radius: 3px; background: rgba(241, 234, 217, 0.12); overflow: hidden; }
+.dex-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--gold), #f0d58a); border-radius: 3px; transition: width .6s; }
+.dex-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.dex-tabs button { flex: none; font-size: 13px; padding: 6px 12px; border-radius: 999px; color: var(--muted); background: rgba(241, 234, 217, 0.06); }
+.dex-tabs button[aria-pressed="true"] { background: var(--cream); color: #1a2226; font-weight: 700; }
+.dex-grid { list-style: none; margin: 0; padding: 6px 12px 16px; overflow-y: auto; flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; align-content: start; }
+.dex-card { border-radius: 14px; padding: 8px 8px 10px; background: rgba(241, 234, 217, 0.05); display: grid; justify-items: center; gap: 3px; text-align: center; position: relative; }
+.dex-card canvas { width: 140px; height: 56px; }
+.dex-card .dn { font-family: var(--display); font-weight: 700; font-size: 14.5px; line-height: 1.25; }
+.dex-card .ds { font-size: 11.5px; color: var(--muted); }
+.dex-card .tier { font-size: 10.5px; padding: 0 7px; }
+.dex-card.locked .dn { color: rgba(167, 177, 171, 0.6); letter-spacing: 0.1em; }
+.dex-card.locked canvas { opacity: .55; }
+.dex-card.fresh::after { content: 'NEW'; position: absolute; top: 6px; right: 7px; font-size: 9.5px; font-weight: 700; letter-spacing: .06em; color: #1a2226; background: var(--gold); border-radius: 6px; padding: 1px 5px; }
+.dex-card.t3:not(.locked) { box-shadow: inset 0 0 0 1px rgba(143, 233, 255, 0.45), 0 0 14px rgba(120, 230, 255, 0.12); }
 .reset { justify-self: start; font-size: 12px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; padding: 2px 0; }
 .reset.arm { color: #f0a07e; }
 .family:disabled { opacity: .45; cursor: default; }
@@ -352,6 +380,15 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
   </svg>
   <span class="badge" id="countN">6</span>
   <span class="lbl">연못 식구</span>
+</button>
+
+<button class="family dexb menu-item glass" id="dexBtn" aria-label="잉어 도감 보기">
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M4.5 5.5c2.6-1 5.1-.8 7.5.8 2.4-1.6 4.9-1.8 7.5-.8v12.5c-2.6-1-5.1-.8-7.5.8-2.4-1.6-4.9-1.8-7.5-.8V5.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M12 6.3v12.5" stroke="currentColor" stroke-width="1.5"/>
+  </svg>
+  <span class="badge" id="dexN" hidden>0</span>
+  <span class="lbl">도감</span>
 </button>
 
 <button class="family snd menu-item glass" id="soundBtn" aria-pressed="true" aria-label="물소리 끄기">
@@ -404,6 +441,15 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
 
 <div class="hint" id="hint">연못을 클릭해서 잉어에게 밥을 주세요</div>
 <div class="update glass" id="updateBar" role="status" aria-live="polite"><span>연못이 새로워졌어요</span><button type="button" id="updateGo">새로고침</button><button type="button" class="x" id="updateX" aria-label="나중에">×</button></div>
+<section class="dex glass" id="dex" hidden role="dialog" aria-labelledby="dexTitle">
+  <div class="dex-head">
+    <div class="dex-top"><h2 id="dexTitle">잉어 도감</h2>
+      <button class="close" id="dexClose" aria-label="닫기"><svg viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button></div>
+    <div class="dex-prog"><span><b id="dexGot">0</b> / <span id="dexAll">0</span>종 만남</span><div class="dex-bar"><i id="dexBar"></i></div></div>
+    <div class="dex-tabs" id="dexTabs"></div>
+  </div>
+  <ul class="dex-grid" id="dexGrid"></ul>
+</section>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <button class="family add menu-item glass" id="newBtn" aria-label="새 잉어 들이기">
@@ -1882,7 +1928,8 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     plop();
     announceRare(g);
     if (g.mutant && SHINE_ON) k.shine = SHINE_LEN;
-    toast(g.mutant ? `✨ <b>${esc(g.label)}</b>${josa(g.label, '이', '가')} 나타났어요! · 전설` : `${esc(g.label)} 잉어가 들어왔어요 · ${TIERS[g.tier]}`);
+    const firstMeet = typeof meet === 'function' && meet(g);
+    toast((g.mutant ? `✨ <b>${esc(g.label)}</b>${josa(g.label, '이', '가')} 나타났어요! · 전설` : `${esc(g.label)} 잉어가 들어왔어요 · ${TIERS[g.tier]}`) + (firstMeet ? ' · <b>도감 새 등록</b>' : ''), firstMeet ? 3600 : 2800);
     saveDirty = true; updateUI();
   }
 
@@ -2437,6 +2484,86 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
   for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, e => e.preventDefault(), { passive: false });
   document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
   document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
+  // ================= field guide (도감): every kind you have ever met, kept even after letting koi go =================
+  const DEX_STORE = 'koi-dex-v1';
+  const VARIANTS = { '도이츠 고하쿠': '고하쿠', '킨다이 쇼와': '쇼와', '쿠로 고시키': '고시키', '히 슈스이': '슈스이', '도이츠 오치바': '오치바', '도이츠 구자쿠': '구자쿠' };
+  const MUTANTS = [['돌연변이 메기', 'catfish', false], ['알비노 메기', 'catfish', true], ['전기뱀장어', 'eel', false], ['푸른 전기뱀장어', 'eel', true]];
+  const DEX = [];
+  for (const b of BREEDS) {
+    DEX.push({ key: b.name, name: b.name, tier: b.tier, breed: b });
+    for (const [v, of] of Object.entries(VARIANTS)) if (of === b.name) DEX.push({ key: v, name: v, sub: b.name + ' 변형', tier: b.tier, breed: b });
+  }
+  for (const [name, kind, special] of MUTANTS) DEX.push({ key: name, name, sub: '돌연변이', tier: 3, kind, special });
+  const dexKey = g => g.mutant ? (/알비노/.test(g.label) ? '알비노 메기' : /푸른/.test(g.label) ? '푸른 전기뱀장어' : g.kind === 'eel' ? '전기뱀장어' : '돌연변이 메기') : (VARIANTS[g.label] === g.breed ? g.label : g.breed);
+  let dex = {}, dexFresh = new Set();
+  try { dex = JSON.parse(localStorage.getItem(DEX_STORE) || '{}') || {}; } catch (e) { dex = {}; }
+  function saveDex() { try { localStorage.setItem(DEX_STORE, JSON.stringify(dex)); } catch (e) {} }
+  // returns true the first time this kind is met
+  function meet(g) {
+    const key = dexKey(g);
+    if (!DEX.some(d => d.key === key) || dex[key]) return false;
+    dex[key] = { t: Date.now(), g };
+    dexFresh.add(key); saveDex(); dexBadge();
+    return true;
+  }
+  function dexBadge() { const n = dexFresh.size, el = $('dexN'); el.hidden = !n; el.textContent = n; }
+  // a stand-in fish for kinds not met yet, drawn as a dark shadow
+  const sampleCache = {};
+  function sampleGenome(d) {
+    if (sampleCache[d.key]) return sampleCache[d.key];
+    let g = null;
+    if (d.kind) { for (let i = 0; i < 300 && !g; i++) { const t = makeMutant(d.kind); if (/알비노|푸른/.test(t.label) === d.special) g = t; } }
+    else {
+      for (let i = 0; i < 600 && !g; i++) {
+        const t = { breed: d.breed.name, label: null, base: C.white, spots: [], net: null, doitsu: null, metal: false, fin: null, finBase: null, ginrin: false, longFin: false, seed: 3 };
+        d.breed.make(t); if (!t.fin) t.fin = t.base; t.label = t.label || d.breed.name;
+        if (dexKey(t) === d.key) g = t;
+      }
+    }
+    return (sampleCache[d.key] = g);
+  }
+  function shadowPortrait(cv, g) {
+    paintPortrait(cv, g, 140, 56);
+    const c = cv.getContext('2d'); c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
+    c.globalCompositeOperation = 'source-in'; c.fillStyle = 'rgba(6, 26, 20, 0.85)'; c.fillRect(0, 0, cv.width, cv.height); c.restore();
+  }
+  let dexTab = 'all';
+  const DEX_TABS = [['all', '전체'], ['0', '흔함'], ['1', '드묾'], ['2', '희귀'], ['3', '전설']];
+  function renderDex() {
+    const got = DEX.filter(d => dex[d.key]).length;
+    $('dexGot').textContent = got; $('dexAll').textContent = DEX.length;
+    $('dexBar').style.width = (got / DEX.length * 100).toFixed(1) + '%';
+    $('dexTabs').innerHTML = DEX_TABS.map(([k, n]) => {
+      const list = k === 'all' ? DEX : DEX.filter(d => String(d.tier) === k);
+      const have = list.filter(d => dex[d.key]).length;
+      return `<button type="button" data-k="${k}" aria-pressed="${dexTab === k}">${n} ${have}/${list.length}</button>`;
+    }).join('');
+    const grid = $('dexGrid'); grid.innerHTML = '';
+    for (const d of DEX) {
+      if (dexTab !== 'all' && String(d.tier) !== dexTab) continue;
+      const seen = dex[d.key];
+      const li = document.createElement('li');
+      li.className = `dex-card t${d.tier}` + (seen ? '' : ' locked') + (dexFresh.has(d.key) ? ' fresh' : '');
+      const cv = document.createElement('canvas'); cv.setAttribute('aria-hidden', 'true');
+      li.appendChild(cv);
+      if (seen) paintPortrait(cv, seen.g, 140, 56); else { const g = sampleGenome(d); if (g) shadowPortrait(cv, g); }
+      const when = seen ? new Date(seen.t) : null;
+      li.insertAdjacentHTML('beforeend', `<div class="dn">${seen ? esc(d.name) : '???'}</div><span class="tier t${d.tier}">${TIERS[d.tier]}</span>` +
+        `<div class="ds">${seen ? `${when.getMonth() + 1}월 ${when.getDate()}일에 만남` : (d.sub ? esc(d.sub) : '아직 못 만났어요')}</div>`);
+      li.setAttribute('aria-label', seen ? `${d.name}, ${TIERS[d.tier]}, 만남` : `아직 못 만난 ${TIERS[d.tier]} 잉어`);
+      grid.appendChild(li);
+    }
+  }
+  $('dexTabs').addEventListener('click', e => { const b = e.target.closest('button[data-k]'); if (!b) return; dexTab = b.dataset.k; renderDex(); });
+  function openDex() { setMenu(false); setDrawer(false); renderDex(); $('dex').hidden = false; }
+  function closeDex() { $('dex').hidden = true; dexFresh.clear(); dexBadge(); }
+  $('dexBtn').addEventListener('click', openDex);
+  $('dexClose').addEventListener('click', closeDex);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('dex').hidden) closeDex(); });
+  // everyone already swimming counts as met (quietly, no NEW tags for old friends)
+  for (const k of koi) meet(k.g);
+  dexFresh.clear(); dexBadge();
+
   // ---- tell people when a newer version of the website is out ----
   (() => {
     const meta = document.querySelector('meta[name="build"]');
