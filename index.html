@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="8af4750f3ab2">
+<meta name="build" content="02fd90abeb61">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="description" content="연못을 눌러 잉어에게 먹이를 주고, 31가지 품종의 잉어를 키우며 이름을 지어 주세요.">
 <meta property="og:title" content="달밤 잉어 연못">
@@ -1938,7 +1938,7 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     const b = $('resetBtn');
     if (!resetArmed) {
       resetArmed = setTimeout(() => { resetArmed = 0; b.classList.remove('arm'); b.textContent = '연못 처음부터 다시 시작'; }, 3500);
-      b.classList.add('arm'); b.textContent = '정말 비울까요? 한 번 더 누르면 새 잉어 세 마리로 바뀌어요';
+      b.classList.add('arm'); b.textContent = '정말 비울까요? 한 번 더 누르면 도감까지 지우고 새 잉어 세 마리로 시작해요';
       return;
     }
     clearTimeout(resetArmed); resetArmed = 0;
@@ -1947,8 +1947,9 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     seed(); pellets = [];
     list.innerHTML = ''; rows.clear();
     koi.forEach(addRow);
+    resetDex();
     uiDirty = true; saveDirty = true;
-    toast('새 잉어 세 마리가 들어왔어요');
+    toast('도감을 비우고 새 잉어 세 마리로 다시 시작해요');
   });
 
   const menuItems = [...document.querySelectorAll('.menu-item')];
@@ -2506,6 +2507,8 @@ body:not(.menu-open) .menu-item { opacity: 0; visibility: hidden; pointer-events
     dexFresh.add(key); saveDex(); dexBadge();
     return true;
   }
+  // starting the pond over also starts the guide over, with the three new koi already in it
+  function resetDex() { dex = {}; dexFresh.clear(); for (const k of koi) meet(k.g); dexFresh.clear(); saveDex(); dexBadge(); }
   function dexBadge() { const n = dexFresh.size, el = $('dexN'); el.hidden = !n; el.textContent = n; }
   // a stand-in fish for kinds not met yet, drawn as a dark shadow
   const sampleCache = {};
